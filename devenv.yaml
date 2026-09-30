@@ -1,0 +1,6 @@
+# https://devenv.sh/reference/yaml-options/
+inputs:
+  # devenv's default nixpkgs input tracks nixpkgs-unstable (now 26.11), which
+  # dropped x86_64-darwin. Pin to the last release that still supports it.
+  nixpkgs:
+    url: github:NixOS/nixpkgs/nixpkgs-26.05-darwin
