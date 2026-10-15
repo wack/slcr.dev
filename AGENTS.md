@@ -101,18 +101,18 @@ Renaming or moving a file changes its URL. To add a frontmatter field, add it
 to the zod schema in `content-collections.ts`. The field is then typed on
 every entry of `allDocs`.
 
-## Site pages (about, announcements, legal)
+## Site pages (about, announcements, code of conduct)
 
 The non-docs pages are also editable MDX, in a second collection, `pages`,
 under `content/pages/`. Each file has its own explicit route:
 `content/pages/about.mdx` is rendered by `app/about/page.tsx`, and likewise
-`announcements`, `code-of-conduct`, and `privacy`. Their frontmatter is
-`title`, `description`, and an optional `updated` date (`YYYY-MM-DD`), shown as
+`announcements` and `code-of-conduct`. Their frontmatter is `title`,
+`description`, and an optional `updated` date (`YYYY-MM-DD`), shown as
 "Last updated". Announcements is a single page: add new entries at the top of
 `content/pages/announcements.mdx` under a dated `##` heading.
 
 Header nav links are in `components/site-header.tsx` and footer links (code of
-conduct, privacy) are in `components/site-footer.tsx`.
+conduct) are in `components/site-footer.tsx`.
 
 # Design system
 

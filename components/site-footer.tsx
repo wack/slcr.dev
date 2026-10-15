@@ -2,10 +2,7 @@ import Link from "next/link";
 import { SliceDivider } from "@/components/decor";
 import { Logo } from "@/components/logo";
 
-const links = [
-  { href: "/code-of-conduct", label: "Code of Conduct" },
-  { href: "/privacy", label: "Privacy Policy" },
-];
+const links = [{ href: "/code-of-conduct", label: "Code of Conduct" }];
 
 export function SiteFooter() {
   return (
@@ -17,7 +14,7 @@ export function SiteFooter() {
             <Logo variant="white" decorative className="size-8" />
             <p>SLCR is an open standard.</p>
           </div>
-          <nav aria-label="Legal" className="flex gap-6">
+          <nav aria-label="Footer" className="flex gap-6">
             {links.map((item) => (
               <Link
                 key={item.href}
