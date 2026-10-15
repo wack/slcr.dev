@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ButtonLink } from "@/components/button";
+import { InstallTabs } from "@/components/install-tabs";
 import {
   Eyebrow,
   reveal,
@@ -237,11 +238,8 @@ export default function Home() {
               Give each agent only the requirements its task needs, then verify
               the result with the tools you already use.
             </p>
-            <div className="mt-10 flex flex-wrap gap-4 motion-safe:animate-rise motion-safe:[animation-delay:300ms]">
-              <ButtonLink href={githubUrl}>Get started on GitHub</ButtonLink>
-              <ButtonLink href={specHref} variant="secondary">
-                Read the specification
-              </ButtonLink>
+            <div className="mt-10 max-w-lg motion-safe:animate-rise motion-safe:[animation-delay:300ms]">
+              <InstallTabs />
             </div>
           </div>
         </div>
