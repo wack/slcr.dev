@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ButtonLink } from "@/components/button";
+import { InstallTabs } from "@/components/install-tabs";
 import {
   Eyebrow,
   reveal,
@@ -37,6 +38,13 @@ const principles = [
         checks. <code>slcr check</code> reports what&apos;s met.
       </>
     ),
+  },
+  {
+    letter: "R",
+    glyph: "text-slate-600",
+    corner: "bg-slate-500",
+    title: "Requirements",
+    body: "As agents write more code, teams are moving to spec-driven development. SLCR makes the spec a first-class artifact with a standard format.",
   },
 ];
 
@@ -237,11 +245,8 @@ export default function Home() {
               Give each agent only the requirements its task needs, then verify
               the result with the tools you already use.
             </p>
-            <div className="mt-10 flex flex-wrap gap-4 motion-safe:animate-rise motion-safe:[animation-delay:300ms]">
-              <ButtonLink href={githubUrl}>Get started on GitHub</ButtonLink>
-              <ButtonLink href={specHref} variant="secondary">
-                Read the specification
-              </ButtonLink>
+            <div className="mt-10 max-w-lg motion-safe:animate-rise motion-safe:[animation-delay:300ms]">
+              <InstallTabs />
             </div>
           </div>
         </div>
@@ -261,7 +266,7 @@ export default function Home() {
         title="Long prose specs cause context rot, and agent errors compound across tasks"
         className="bg-slate-50"
       >
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {principles.map((p, i) => (
             <div
               key={p.title}
