@@ -1,27 +1,289 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * SLCR site theme.
+ *
+ * Brand ramps come from the four logo colors. Each base color sits on the step
+ * nearest its lightness (sprout/leaf/lagoon-500, cobalt-800). Steps 600 and up
+ * pass WCAG AA (4.5:1) with white text; 500 and below need dark text.
+ * Generated in OKLCH at constant hue; see "Design system" in AGENTS.md.
+ */
+@theme {
+  /* sprout: base #60AE00 */
+  --color-sprout-50: #f1fbeb;
+  --color-sprout-100: #e1f4d5;
+  --color-sprout-200: #c7e9b3;
+  --color-sprout-300: #a6da85;
+  --color-sprout-400: #80c54c;
+  --color-sprout-500: #60ae00;
+  --color-sprout-600: #488501;
+  --color-sprout-700: #3d7101;
+  --color-sprout-800: #2d5800;
+  --color-sprout-900: #1f3f00;
+  --color-sprout-950: #122900;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* leaf: base #00AD0F */
+  --color-leaf-50: #edfcec;
+  --color-leaf-100: #d9f6d6;
+  --color-leaf-200: #b7ebb3;
+  --color-leaf-300: #8bdb86;
+  --color-leaf-400: #51c64e;
+  --color-leaf-500: #00ad0f;
+  --color-leaf-600: #018a0a;
+  --color-leaf-700: #017107;
+  --color-leaf-800: #005804;
+  --color-leaf-900: #004102;
+  --color-leaf-950: #002a01;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* lagoon: base #00AD97 */
+  --color-lagoon-50: #edfaf7;
+  --color-lagoon-100: #d9f4ed;
+  --color-lagoon-200: #b9e8dd;
+  --color-lagoon-300: #8cd9c8;
+  --color-lagoon-400: #53c4b0;
+  --color-lagoon-500: #00ad97;
+  --color-lagoon-600: #008674;
+  --color-lagoon-700: #017062;
+  --color-lagoon-800: #01574b;
+  --color-lagoon-900: #003f36;
+  --color-lagoon-950: #002922;
+
+  /* cobalt: base #0028AD */
+  --color-cobalt-50: #f3f7ff;
+  --color-cobalt-100: #e3edff;
+  --color-cobalt-200: #c9dbff;
+  --color-cobalt-300: #a7c4ff;
+  --color-cobalt-400: #7da7ff;
+  --color-cobalt-500: #5388ff;
+  --color-cobalt-600: #2a61e6;
+  --color-cobalt-700: #1949c4;
+  --color-cobalt-800: #0028ad;
+  --color-cobalt-900: #011f80;
+  --color-cobalt-950: #00115f;
+
+  /*
+   * Logo gradient. Decoration rule: a single shape gets either a soft gradient
+   * or a solid fill, never a hard edge inside it. Hard edges only fall between
+   * shapes, so there are deliberately no conic gradients here.
+   */
+  --gradient-slcr-linear: linear-gradient(
+    120deg,
+    #60ae00,
+    #00ad0f 33%,
+    #00ad97 66%,
+    #0028ad
+  );
+
+  /* Body text is at least 150% line height; headings at least 120%. */
+  --text-xs--line-height: 1.5;
+  --text-sm--line-height: 1.5;
+  --text-base--line-height: 1.625;
+  --text-lg--line-height: 1.6;
+  --text-xl--line-height: 1.5;
+  --text-2xl--line-height: 1.35;
+  --text-3xl--line-height: 1.25;
+  --text-4xl--line-height: 1.2;
+  --text-5xl--line-height: 1.2;
+  --text-6xl--line-height: 1.2;
+  --text-7xl--line-height: 1.2;
+  --leading-none: 1.2;
+
+  /* Motion. Always apply these with the `motion-safe:` variant. */
+  --animate-rise: rise 800ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      translate: 0 1rem;
+    }
+  }
+  @keyframes slice-in {
+    from {
+      opacity: 0;
+      scale: 0.4;
+    }
+  }
+  @keyframes slice-shimmer {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.45;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Font variables are set on <html> by next/font in app/layout.tsx. */
+@theme inline {
+  --font-sans: var(--font-spline-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-unbounded), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+@layer base {
+  body {
+    @apply bg-white font-sans text-base leading-relaxed text-slate-700;
+    /* Spline Sans has a narrow word space (~0.18em); at small bold sizes,
+       such as buttons, words run together. Widen it to ~0.25em. */
+    word-spacing: 0.07em;
+  }
+
+  /* Other faces keep their own spacing; monospace must stay aligned. */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  code,
+  kbd,
+  pre,
+  samp,
+  .font-display,
+  .font-mono {
+    word-spacing: normal;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display font-medium leading-tight tracking-tight text-balance text-slate-950;
+  }
+
+  ::selection {
+    @apply bg-sprout-200 text-slate-950;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-cobalt-600;
+  }
+
+  /* Dark surfaces get a white focus ring; cobalt-600 is only 3.2:1 there. */
+  .bg-cobalt-950 :focus-visible {
+    @apply outline-white;
+  }
+}
+
+/* Logo-color gradient as a background and as text. */
+@utility bg-slcr-linear {
+  background-image: var(--gradient-slcr-linear);
+}
+/*
+ * The logo gradient for a `clip-tri-br` triangle, banded parallel to its long
+ * edge. `to bottom right` aims the bands along the box's other diagonal (the
+ * edge) at any aspect ratio, and the colors start at that 50% line, so the
+ * whole range lands in the visible half. Gradients in triangles should always
+ * run parallel or perpendicular to the long edge.
+ */
+@utility bg-slcr-tri-br {
+  background-image: linear-gradient(
+    to bottom right,
+    transparent 50%,
+    #60ae00 50%,
+    #00ad0f 66%,
+    #00ad97 83%,
+    #0028ad
+  );
+}
+/*
+ * Gradient text uses the 600+ steps: the logo colors themselves fall below
+ * 3:1 on white, which fails WCAG AA even for large text.
+ */
+@utility text-slcr-gradient {
+  background-image: linear-gradient(
+    120deg,
+    var(--color-sprout-600),
+    var(--color-lagoon-600) 60%,
+    var(--color-cobalt-700)
+  );
+  background-clip: text;
+  color: transparent;
+}
+
+/*
+ * Triangles ("slices"). `clip-tri-tl` keeps the top-left half of a box,
+ * split along its diagonal; `clip-tri-up` is an isosceles triangle.
+ */
+@utility clip-tri-tl {
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+@utility clip-tri-tr {
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+@utility clip-tri-bl {
+  clip-path: polygon(0 0, 0 100%, 100% 100%);
+}
+@utility clip-tri-br {
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+@utility clip-tri-up {
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+@utility clip-tri-down {
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+/*
+ * A box with its bottom-right corner sliced off. Used on buttons. The cut size
+ * is a registered property so it can transition, e.g.
+ * `transition-[--slice-size] hover:[--slice-size:20px]`.
+ */
+@property --slice-size {
+  syntax: "<length>";
+  inherits: false;
+  /* Must be computationally independent, so px rather than rem. */
+  initial-value: 12px;
+}
+@utility clip-slice-corner {
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - var(--slice-size, 12px)),
+    calc(100% - var(--slice-size, 12px)) 100%,
+    0 100%
+  );
+}
+
+/* Faint field of small staggered triangles for section backgrounds. */
+@utility bg-triangle-grid {
+  background-image: url("/decor/triangle-grid.svg");
+  background-size: 44px 44px;
+}
+
+/*
+ * SliceField triangles: pop in on load, staggered by --slice-delay. The
+ * shimmer variant then fades out and back once. Every animation must end
+ * within 5s of load (WCAG 2.2.2), so nothing here loops.
+ */
+@utility animate-slice-in {
+  animation: slice-in 700ms cubic-bezier(0.2, 0.7, 0.2, 1)
+    var(--slice-delay, 0ms) both;
+}
+@utility animate-slice-shimmer {
+  animation:
+    slice-in 700ms cubic-bezier(0.2, 0.7, 0.2, 1) var(--slice-delay, 0ms) both,
+    slice-shimmer 3.2s ease-in-out calc(var(--slice-delay, 0ms) + 0.7s) 1;
+}
+
+/*
+ * Scroll reveal. Elements with `data-reveal` fade up once as they scroll into
+ * view; components/scroll-reveal.tsx sets the state. Without JS, or with
+ * reduced motion, they are simply visible. Stagger with --reveal-delay.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  [data-reveal] {
+    transition:
+      opacity 700ms cubic-bezier(0.2, 0.7, 0.2, 1),
+      translate 700ms cubic-bezier(0.2, 0.7, 0.2, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  [data-reveal="hidden"] {
+    opacity: 0;
+    translate: 0 1.5rem;
+    transition: none;
+  }
 }

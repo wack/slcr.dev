@@ -1,0 +1,30 @@
+---
+title: About SLCR
+description: Who is behind SLCR, why it exists, and how it is governed.
+---
+
+SLCR (Sliceable, Linked, Checkable Requirements) is an open standard for writing software requirements as structured data, with a reference implementation, the `slcr` CLI.
+
+## Why SLCR
+
+As agents write more of our code, the spec becomes the source of truth for what that code should do. Long prose specs work against this. Agents mix up or drop instructions from large documents, and small errors compound across a project.
+
+SLCR stores requirements in a format agents can use and renders it as a document people can read. Each agent gets only the slice of the spec its task needs, and validators check whether the code meets each requirement. The goal is simple: fewer times a person has to send an agent back to fix its work.
+
+## Governance
+
+SLCR was created by and is maintained by [Wack, Inc.](https://wack.run) Contributors from outside Wack can become maintainers over time.
+
+Changes to the standard start as a public proposal on GitHub. Maintainers aim for consensus, make the final call when there isn't one, and record the reasoning behind every decision. The standard is versioned, and every SLCR file declares the format version it uses.
+
+## Contributing
+
+SLCR is early, and feedback from real use matters most right now. You can help by:
+
+- trying SLCR on a real codebase and opening issues
+- commenting on proposals for the standard
+- contributing to the CLI or the docs
+
+Start with [CONTRIBUTING.md](https://github.com/wack/slcr/blob/main/CONTRIBUTING.md) for how to propose changes and submit pull requests.
+
+[View SLCR on GitHub](https://github.com/wack/slcr)
