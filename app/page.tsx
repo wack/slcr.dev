@@ -39,6 +39,13 @@ const principles = [
       </>
     ),
   },
+  {
+    letter: "R",
+    glyph: "text-slate-600",
+    corner: "bg-slate-500",
+    title: "Requirements",
+    body: "As agents write more code, teams are moving to spec-driven development. SLCR makes the spec a first-class artifact with a standard format.",
+  },
 ];
 
 // Outline of the example spec. Rows in the agent slice carry `linked`: the
@@ -259,7 +266,7 @@ export default function Home() {
         title="Long prose specs cause context rot, and agent errors compound across tasks"
         className="bg-slate-50"
       >
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {principles.map((p, i) => (
             <div
               key={p.title}
