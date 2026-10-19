@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { SliceDivider } from "@/components/decor";
+import { GitHubLink } from "@/components/github-link";
 import { Logo } from "@/components/logo";
 
-const links = [{ href: "/code-of-conduct", label: "Code of Conduct" }];
+const links = [
+  { href: "/code-of-conduct", label: "Code of Conduct" },
+  { href: "/security", label: "Security" },
+];
 
 export function SiteFooter() {
   return (
@@ -12,9 +16,9 @@ export function SiteFooter() {
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-6 px-6 pt-6 pb-12 text-sm">
           <div className="flex items-center gap-4">
             <Logo variant="white" decorative className="size-8" />
-            <p>SLCR is an open standard.</p>
+            <p>SLCR is an open standard for agent-native software requirements.</p>
           </div>
-          <nav aria-label="Footer" className="flex gap-6">
+          <nav aria-label="Footer" className="flex items-center gap-6">
             {links.map((item) => (
               <Link
                 key={item.href}
@@ -24,6 +28,7 @@ export function SiteFooter() {
                 {item.label}
               </Link>
             ))}
+            <GitHubLink className="hover:text-white" />
           </nav>
         </div>
       </div>

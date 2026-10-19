@@ -1,3 +1,4 @@
+import { ArrowUpRight } from "lucide-react";
 import type { ReactNode } from "react";
 import { ButtonLink } from "@/components/button";
 import { InstallTabs } from "@/components/install-tabs";
@@ -8,8 +9,8 @@ import {
   SliceDivider,
   SliceField,
 } from "@/components/decor";
+import { githubUrl } from "@/components/github-link";
 
-const githubUrl = "https://github.com/wack/slcr";
 const specHref = "/docs/reference/specification";
 
 const principles = [
@@ -165,8 +166,8 @@ const projectParts: {
     mark: "border-lagoon-500",
   },
   {
-    // TODO: link to the agent skill once it is published.
     title: "Agent skill",
+    href: `${githubUrl}/tree/trunk/skills`,
     body: "Teaches agents to write SLCR and use the CLI.",
     mark: "border-cobalt-800",
   },
@@ -416,6 +417,16 @@ export default function Home() {
                     className="underline decoration-sprout-500 decoration-2 underline-offset-4 transition-colors hover:text-cobalt-800 hover:decoration-cobalt-800"
                   >
                     {part.title}
+                    {part.href.startsWith("http") && (
+                      <>
+                        <ArrowUpRight
+                          aria-hidden="true"
+                          className="ml-1 inline size-4 align-baseline"
+                          strokeWidth={2.25}
+                        />
+                        <span className="sr-only"> (external link)</span>
+                      </>
+                    )}
                   </a>
                 ) : (
                   part.title
@@ -444,7 +455,7 @@ export default function Home() {
           <div className="relative max-w-xl">
             <Eyebrow markClassName="bg-sprout-600">Contribute</Eyebrow>
             <h2 className="mt-4 text-2xl sm:text-3xl">
-              SLCR is early. Try it and tell us what breaks.
+              Help shape the standard
             </h2>
             <p className="mt-4 text-slate-700">
               Issues, format feedback, tool descriptors, and pull requests are
