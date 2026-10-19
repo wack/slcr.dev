@@ -79,7 +79,9 @@ Adding a page needs no route or component code. The file is the page.
    ```
 
 3. Write the body. The page template already renders `title` as the page's
-   `<h1>`, so start body headings at `##`. The body is MDX, not plain
+   `<h1>`, so start body headings at `##`. GitHub-flavored Markdown
+   (tables, strikethrough, task lists, bare-URL autolinks) is enabled via
+   `remark-gfm`. The body is MDX, not plain
    Markdown: a bare `{` or `<` in prose is parsed as JavaScript or JSX, so
    escape it (`\{`, `\<`) or put it in a code span. Plain HTML elements such
    as `<kbd>` work. Importing project components from MDX is not set up. To
@@ -101,18 +103,18 @@ Renaming or moving a file changes its URL. To add a frontmatter field, add it
 to the zod schema in `content-collections.ts`. The field is then typed on
 every entry of `allDocs`.
 
-## Site pages (about, announcements, code of conduct)
+## Site pages (about, announcements, code of conduct, security)
 
 The non-docs pages are also editable MDX, in a second collection, `pages`,
 under `content/pages/`. Each file has its own explicit route:
 `content/pages/about.mdx` is rendered by `app/about/page.tsx`, and likewise
-`announcements` and `code-of-conduct`. Their frontmatter is `title`,
+`announcements`, `code-of-conduct`, and `security`. Their frontmatter is `title`,
 `description`, and an optional `updated` date (`YYYY-MM-DD`), shown as
 "Last updated". Announcements is a single page: add new entries at the top of
 `content/pages/announcements.mdx` under a dated `##` heading.
 
 Header nav links are in `components/site-header.tsx` and footer links (code of
-conduct) are in `components/site-footer.tsx`.
+conduct, security) are in `components/site-footer.tsx`.
 
 # Design system
 
@@ -161,8 +163,9 @@ Styling is Tailwind v4 throughout. Theme tokens and custom utilities live in
   Docs stay neutral (slate, with sprout/cobalt only for marks, links, and the
   current page).
 - **Logo.** `components/logo.tsx` renders `public/slcr-logo.svg` (color) or
-  `public/slcr-logo-white.svg`. `app/icon.svg` is the favicon: the S icon
-  on its own, not the full wordmark. The color logo
+  `public/slcr-logo-white.svg`. `app/icon.svg` is the favicon: one SVG holding the S icon and
+  a copy of `public/slcr-logo.svg`; an internal media query shows the S
+  at 24px and below (16px tabs) and the full wordmark above. The color logo
   is plain SVG: the source file's angular gradient (a Figma `foreignObject`
   that doesn't render in `<img>` or favicons) is approximated with thin wedges
   clipped to the letters.
