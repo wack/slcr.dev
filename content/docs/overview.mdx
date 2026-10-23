@@ -1,0 +1,99 @@
+---
+title: Overview
+description: What SLCR is, the problems it addresses, and how specifications, slices, and validators fit together.
+order: 1
+---
+
+**SLCR** (Sliceable, Linked, Checkable Requirements) is an open standard for
+software requirements that both people and coding agents work from. A
+project's requirements live in one structured specification. Agents read
+small, task-specific excerpts of it called _slices_. People read a Markdown
+document rendered from it. Validators in the codebase check whether the code
+meets each requirement.
+
+This page explains the problems SLCR addresses and the ideas behind its
+design. To start using it, see the [Quickstart](/docs/getting-started/quickstart).
+
+## The problem
+
+In spec-driven development, a written specification is the source of truth
+for what software should do. Code that doesn't match the spec is a bug.
+Agents use the spec to draft tickets, implement them, and verify the result.
+As projects grow, two problems appear.
+
+**Context rot.** An agent given a long requirements document is more likely
+to confuse details or skip instructions. Most of that text is unrelated to
+the agent's current task, and the effect grows with the amount of text.
+
+**Compounding drift.** A requirement passes through several steps on its way
+to release: spec to ticket, ticket to code, code to test. Each step has a
+small chance of misreading the one before it. If each step has a 2% error
+rate, a project with 50 requirements that each pass through three steps has
+about a 95% chance that at least one requirement drifts. When drift is found
+late, it is hard to tell where it started.
+
+## The approach
+
+SLCR separates how requirements are stored from how they are read.
+
+**The specification is structured data.** A spec is a YAML, JSON, or TOML
+file holding sections, requirements, acceptance criteria, and glossary terms.
+Each node has a permanent ID. Relationships between requirements are explicit
+links rather than implications of the prose. For example, whether an API must
+accept "OAuth tokens _or_ API keys" or "OAuth tokens _and_ API keys" is
+recorded in the data, not left to the wording of a sentence. See
+[Specifications](/docs/concepts/specifications) and
+[Links and Satisfaction](/docs/concepts/links-and-satisfaction).
+
+From that one source, each audience gets a view suited to it:
+
+- **Agents read slices.** A slice contains one requirement and only the
+  context needed to implement it: its background, the requirements it
+  depends on, and the terms it uses. Sibling requirements are left out. This
+  limits context rot. See [Slices](/docs/concepts/slices).
+- **People read rendered Markdown.** `slcr render` generates a conventional
+  requirements document from the spec. The spec is edited; the Markdown is
+  regenerated.
+- **Validators provide evidence.** A validator ties a requirement to a check
+  run by a tool the project declares, such as a test runner or a code
+  matcher. `slcr check` runs every validator and reports each requirement as
+  satisfied, unsatisfied, or unknown (not yet covered). Drift is caught at
+  the requirement where it occurred. See [Validators](/docs/concepts/validators).
+
+Validators refer to requirements, but requirements never refer to
+validators. The spec stays free of implementation detail, so stakeholders
+can read it without knowing how each requirement is tested.
+
+## How the pieces fit together
+
+A typical loop for an agent implementing one requirement:
+
+1. Read the requirement's slice.
+2. Write a validator for one of its acceptance criteria and confirm that it
+   fails.
+3. Implement the requirement until the validator passes.
+4. Run `slcr check` to confirm the requirement, and any parents it refines,
+   are satisfied.
+
+This red-green loop is recommended but not required. In CI, the same
+commands confirm that the project is well formed, that every requirement is
+satisfied, and that any committed rendering matches the spec.
+
+## What SLCR includes
+
+- **The format**: specifications, validator files, the `SLCR.toml` project
+  manifest, and tool descriptors. The format is open, so any tool can read
+  and write it.
+- **`slcr`**: the reference command-line tool. It creates, vets, slices,
+  renders, queries, and checks SLCR projects.
+- **An agent skill**: instructions that teach coding agents when and how to
+  use SLCR.
+
+SLCR is pre-release, and the formats may change before 1.0.
+
+## Where to go next
+
+- Install `slcr` with [Installation](/docs/getting-started/installation).
+- Write your first specification with the [Quickstart](/docs/getting-started/quickstart).
+- Learn the model in depth, starting with [Specifications](/docs/concepts/specifications).
+- Look up exact rules in the [Specification reference](/docs/reference/specification).
