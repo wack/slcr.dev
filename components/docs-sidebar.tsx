@@ -1,4 +1,5 @@
 import { SliceMark } from "@/components/decor";
+import { CodeSpans } from "@/components/code-spans";
 import { NavLink } from "@/components/nav-link";
 import { docHref, getDocSections } from "@/lib/docs";
 
@@ -9,7 +10,7 @@ export function DocsSidebar() {
         href="/docs"
         className="font-display text-sm font-medium text-slate-950 hover:text-cobalt-800"
       >
-        Documentation
+        SLCR docs
       </NavLink>
       {getDocSections().map((section) => (
         <div key={section.key}>
@@ -24,7 +25,7 @@ export function DocsSidebar() {
                   href={docHref(doc)}
                   className="-ml-px block border-l-2 border-transparent py-1 pl-4 text-slate-700 hover:border-slate-400 hover:text-slate-950 aria-[current=page]:border-sprout-500 aria-[current=page]:font-medium aria-[current=page]:text-cobalt-800"
                 >
-                  {doc.title}
+                  <CodeSpans text={doc.title} />
                 </NavLink>
               </li>
             ))}

@@ -1,0 +1,107 @@
+---
+title: Project manifest
+description: The normative definition of SLCR.toml, the file that marks a project's root and declares its specifications and tools.
+order: 41
+---
+
+This page defines `SLCR.toml`. The key words MUST, MUST NOT, SHOULD, and MAY
+are used as defined in [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119).
+
+## Location
+
+- The manifest MUST be named exactly `SLCR.toml`. The name is
+  case-sensitive: a file named `slcr.toml` is reported as an error.
+- The directory that holds the manifest is the project root.
+- `slcr` finds the project by searching the working directory and then each
+  parent directory for `SLCR.toml`.
+
+## Fields
+
+| Field | Required | Value |
+| --- | --- | --- |
+| `formatVersion` | Yes | The string `"1"`. |
+| `specs` | Yes | A non-empty array of glob patterns naming the project's specification files, with no duplicates. |
+| `tools` | No | A table of tool declarations, keyed by tool name. If present, it MUST NOT be empty. |
+
+Unknown fields MUST NOT appear.
+
+```toml
+formatVersion = "1"
+specs = ["SPEC.slcr.toml", "services/**/*.slcr.yaml"]
+
+[tools.cargo-nextest]
+version = "1.0.0"
+source = { url = "https://example.com/descriptors/cargo-nextest/1.0.0.toml" }
+pin = "blake3:9f2c…"
+
+[tools.ast-grep]
+version = "1.2.0"
+source = { path = "tools/ast-grep.toml" }
+pin = "blake3:5938…"
+```
+
+## `specs`
+
+Each entry is a glob relative to the project root:
+
+- `*` and `?` match within one path segment. They match a leading dot, but
+  never a `/`.
+- `**` matches any number of directories.
+- Matching skips the `.git` directory and anything git ignores.
+
+`slcr vet` reports each of these as an error:
+
+| Code | Meaning |
+| --- | --- |
+| `invalid-pattern` | A pattern isn't a valid glob. |
+| `no-match` | A pattern matches no file. |
+| `matches-validator-file` | A pattern matches a validator file. |
+| `unsupported-format` | A match has no specification file extension. |
+| `duplicate-spec-name` | Two matched specifications share a `spec.name`. |
+
+## `tools`
+
+Each key under `[tools]` is a tool name: lowercase letters and digits in
+dash-separated words, such as `cargo-nextest`. Validators refer to tools by
+this key. The key defaults to the descriptor's own `name`, but the key is
+authoritative and can differ from it.
+
+Each entry has these fields:
+
+| Field | Required | Value |
+| --- | --- | --- |
+| `version` | Yes | The descriptor's version, copied from it. A SemVer 2.0.0 version. |
+| `source` | Yes | Where the descriptor is fetched from. |
+| `pin` | Yes | The BLAKE3 hash of the descriptor's bytes. |
+
+### `source`
+
+A source is a table with exactly one of these fields:
+
+| Field | Value |
+| --- | --- |
+| `url` | An `https://` URL. |
+| `path` | A path relative to the project root. It MUST NOT be absolute, contain a `..` segment, or use backslashes. |
+
+### `pin`
+
+A pin is `blake3:` followed by 64 lowercase hexadecimal characters. `slcr`
+MUST NOT run a descriptor whose bytes don't hash to its pin.
+
+Tool entries are written by `slcr tools add`, `slcr tools update`, and
+`slcr tools remove`. A pin SHOULD NOT be written or edited by hand.
+
+`slcr vet` reports each of these as an error:
+
+| Code | Meaning |
+| --- | --- |
+| `descriptor-not-installed` | A pinned descriptor isn't in the descriptor store. Run `slcr tools install`. |
+| `descriptor-corrupted` | The stored descriptor doesn't hash to its pin. |
+| `descriptor-unreadable` | The stored descriptor can't be read. |
+| `invalid-descriptor` | The stored descriptor isn't a valid descriptor. |
+| `descriptor-version-mismatch` | The descriptor's `version` differs from the entry's `version`. |
+
+## Format version
+
+`formatVersion` MUST be `"1"`. A file with an unsupported format version is
+an error.

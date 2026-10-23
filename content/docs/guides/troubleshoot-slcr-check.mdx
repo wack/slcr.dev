@@ -1,0 +1,108 @@
+---
+title: Troubleshoot `slcr check`
+description: What each `slcr check` failure means and how to resolve it.
+order: 34
+---
+
+`slcr check` reports one line per validator, then a summary for each
+specification:
+
+```console
+$ slcr check
+src/.validators.slcr.toml validator 1 (shop/REQ-002, sh): red (exit 101)
+src/.validators.slcr.toml validator 2 (shop/REQ-004, sh): green
+shop: 5 satisfied, 2 unsatisfied, 0 unknown
+```
+
+Details for each problem follow on stderr. Validators are named by file and
+position. Find the entry, then use the sections below. To see a validator's
+full output, run `slcr check --format json`.
+
+## Vetting failed, and nothing ran
+
+`check` vets the project first and runs no validators if vetting fails. Run
+`slcr vet` for the full list of problems. Each finding is labeled at its
+location in the file.
+
+| Finding | Fix |
+| --- | --- |
+| Descriptor not installed | Run `slcr tools install`. Common on a fresh clone or a new CI runner. |
+| `dangling-reference` | A link names an ID that doesn't exist. Correct the ID or add the node. |
+| `duplicate-id` | Give the newer node the next unused ID. |
+| `cycle` | Remove one of the `refines` or `dependsOn` links the finding lists. |
+| `missing-refinement` | Something refines this requirement. Set `refinement` to `AND`, `OR`, or `XOR`. |
+| `unexpected-refinement` | Nothing refines this requirement. Remove `refinement`, or add the missing `refines` links on its children. |
+| `term-out-of-order` | Sort `glossary.terms` by ID. |
+| `unknown-requirement`, `unknown-spec` | A validator names a requirement or specification that doesn't exist. Check the qualified ID, such as `todo-api/REQ-002`. |
+| `unknown-criterion` | The validator's `criterion` belongs to a different requirement. |
+| `tool-not-declared` | Declare the tool with `slcr tools add`, or correct the validator's `tool`. |
+| `invalid-with` | The validator's `with` doesn't match the tool's schema. Run `slcr tools show <tool>` to see the expected fields. |
+| `no-match` | A `specs` pattern in `SLCR.toml` matches no file. Correct the pattern or remove it. |
+
+With `--deny-warnings`, warnings also fail. The common ones are
+`modality-not-stated` (put the modality keyword in the body, in capitals)
+and `vacuous-and` (every refiner of an `AND` is `MAY`).
+
+## A validator is red
+
+The tool ran and failed. `check` prints the end of its stdout and stderr.
+
+1. Read the output to see what failed.
+2. Decide whether the code or the validator is wrong:
+   - If the code doesn't meet the requirement, fix the code.
+   - If the validator is out of date, for example because a test was renamed
+     or moved, update the validator.
+3. Don't change the requirement just to make the validator pass. Change a
+   requirement only if what the software should do has changed.
+
+## A validator could not be run
+
+The tool didn't start, so the validator proves nothing either way. Its
+requirement counts as unknown, and `check` fails. The message says why:
+
+| Cause | Fix |
+| --- | --- |
+| The program wasn't found on `PATH` | Install the program, or add its directory to `PATH`. In CI, add an install step. |
+| The working directory doesn't exist | Check the descriptor's `cwd`, and that the validator file is where you expect. |
+| No `nearest` file was found | The descriptor's `cwd = { nearest = "..." }` found no such file between the validator's directory and the project root. |
+
+These are environment problems. Don't change product code to fix them.
+
+## A requirement is unsatisfied, but its validators are green
+
+A parent's status comes from its refiners. Find the refiner that's
+unsatisfied:
+
+```bash
+slcr query "MATCH (c:Requirement)-[:REFINES]->(p:Requirement {id: 'REQ-001'}) RETURN c.id, c.title"
+```
+
+Then check that refiner's validators. An `XOR` parent is also unsatisfied
+when more than one refiner is satisfied.
+
+## A requirement is unknown
+
+No validator covers it yet. The summary line counts these as coverage gaps:
+
+```console
+shop: 6 satisfied, 0 unsatisfied, 1 unknown (1 coverage gap)
+```
+
+A coverage gap never fails `check`.
+To close it, add a validator for the requirement. See
+[Add a Validator Tool](/docs/guides/add-a-validator-tool) for writing one.
+
+## A failure was absorbed
+
+A validator failed, but every requirement it refines is still satisfied,
+usually because another branch of an `OR` passed. `check` reports it as a
+warning, which fails only with `--deny-warnings`.
+
+## `check` passed locally but fails in CI
+
+- A program a descriptor runs is missing on the CI runner. Install it in an
+  earlier step.
+- The descriptor store is empty on the runner. Run `slcr tools install`
+  before `check`.
+- CI uses `--deny-warnings` and your local run didn't. Run the same command
+  CI runs.

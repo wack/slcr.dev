@@ -1,0 +1,119 @@
+---
+title: Add a validator tool
+description: Declare a tool in a project, write validators for it, and keep its descriptor up to date.
+order: 32
+---
+
+Validators run tools that the project declares in `SLCR.toml`. This guide
+shows how to declare a tool, use it in a validator, change it, and set it up
+on a new machine. For the descriptor format, see
+[Tool descriptors](/docs/reference/tool-descriptors).
+
+## Before you start
+
+- You need a project: a directory with `SLCR.toml`. `slcr init` creates one.
+- The program the tool runs, such as `cargo-nextest`, must be installed and
+  on `PATH` wherever validators run. SLCR doesn't install programs.
+
+## Get a descriptor
+
+Use a published descriptor by its `https://` URL, or write one and keep it
+in the project. A descriptor that runs a short script is a common way to
+check something no existing tool covers:
+
+```toml
+# tools/sh.toml
+formatVersion = "1"
+name = "sh"
+version = "1.0.0"
+
+[validator.schema]
+type = "object"
+required = ["script"]
+additionalProperties = false
+properties.script = { type = "string", minLength = 1 }
+
+[invoke]
+argv = ["sh", "-c", "{with.script}"]
+cwd = "project"
+```
+
+## Declare the tool
+
+Run `slcr tools add` with the descriptor's URL or project path:
+
+```console
+$ slcr tools add tools/sh.toml
+SLCR.toml: added tool sh 1.0.0
+```
+
+This checks the descriptor, records it under `[tools]` in `SLCR.toml` with
+its pin, and installs it in the descriptor store. To declare it under a
+different name, add `--as <name>`.
+
+Commit the change to `SLCR.toml`, and the descriptor file if it's in the
+project.
+
+## Write a validator that uses it
+
+1. See what settings the tool expects:
+
+   ```console
+   $ slcr tools show sh
+   ```
+
+   The output includes the schema that each validator's `with` must
+   satisfy.
+
+2. Add an entry to the validator file in the directory of the code it
+   checks, creating `.validators.slcr.toml` if needed:
+
+   ```toml
+   formatVersion = "1"
+
+   [[validator]]
+   requirement = "todo-api/REQ-001"
+   tool = "sh"
+   with = { script = "test -f README.md" }
+   ```
+
+3. Run `slcr vet` to check the entry against the spec and the tool's schema,
+   then `slcr check` to run it.
+
+## Change a descriptor
+
+Editing a descriptor file has no effect until it's pinned again. `slcr`
+keeps using the pinned version. After editing:
+
+```console
+$ slcr tools update sh
+SLCR.toml: updated tool sh 1.0.0 -> 1.1.0
+```
+
+`tools update` also fetches the latest version of a descriptor from a URL
+source. Raise the descriptor's `version` with each change: a major version
+for changes that break existing validators, minor for compatible additions,
+and patch for fixes.
+
+## Remove a tool
+
+```console
+$ slcr tools remove sh
+```
+
+Remove or change any validators that use the tool first, or `slcr vet`
+reports them as `tool-not-declared`.
+
+## Set up a new machine
+
+On a fresh clone, the descriptor store is empty, and `slcr vet` reports each
+pinned descriptor as not installed. Install them all:
+
+```console
+$ slcr tools install
+sh: installed blake3:8fa5cee6b275…
+```
+
+`tools install` fetches each descriptor from its source and checks it
+against its pin. It never changes a pin. Afterward, `slcr vet` and
+`slcr check --offline` work without network access.

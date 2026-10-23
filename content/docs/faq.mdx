@@ -4,14 +4,133 @@ description: Answers to common questions about SLCR.
 order: 2
 ---
 
+## Is SLCR ready to use?
+
+SLCR is pre-release. The formats may change before 1.0, and a change that
+makes existing files invalid will come with a new format version. Every SLCR
+file declares the format version it uses.
+
+Some features are not built yet. Today, a validator's result comes only from
+the exit code of the tool it runs, and every `slcr check` reruns every
+validator. Structured validator results and result caching are planned.
+
+Feedback from real projects is especially useful at this stage. See
+[How do I propose a change to the standard?](#how-do-i-propose-a-change-to-the-standard)
+
+## Does SLCR use itself?
+
+Yes. The [`slcr` repository](https://github.com/wack/slcr) keeps the CLI's
+requirements in an SLCR specification,
+[`SPEC.slcr.toml`](https://github.com/wack/slcr/blob/trunk/SPEC.slcr.toml),
+with the rendered [`SPEC.md`](https://github.com/wack/slcr/blob/trunk/SPEC.md)
+committed beside it. CI checks that the rendering is up to date and runs
+`slcr check` against the CLI. The repository is a complete working example of
+a project that uses SLCR.
+
 ## Is SLCR free to use?
 
-_Placeholder: licensing answer._
+Yes. The format is an open standard, and the
+[`slcr` repository](https://github.com/wack/slcr), including the reference
+CLI and the agent skill, is released under the
+[MIT License](https://github.com/wack/slcr/blob/trunk/LICENSE).
+
+## Do I have to use the `slcr` CLI?
+
+No. The format is open, so any tool can read and write SLCR files. `slcr` is
+the reference implementation: it defines how the rules on the
+[Specification](/docs/reference/specification) page are checked, and it's the
+easiest way to vet, slice, render, and check a project.
+
+## Do I need to use AI agents to use SLCR?
+
+No. SLCR is designed so agents can work from slices, but nothing requires
+one. People can write and edit specifications by hand, read the rendered
+Markdown, and use slices to review a change against the one requirement it
+implements. Validators and `slcr check` work the same way regardless of who
+wrote the code.
+
+## How do I use SLCR with a coding agent?
+
+Agents use the `slcr` CLI like any other command-line tool. The `slcr`
+repository also includes an [agent skill](https://github.com/wack/slcr/tree/trunk/skills/slcr)
+that teaches an agent when to read a slice, how to write specifications and
+validators, and how to learn the CLI from `--help`. It's written in the
+[Claude skill](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview)
+format. To add it to a repository, run this from the repository root:
+
+```bash
+npx skills add wack/slcr
+```
+
+This installs the skill into `.claude/skills/slcr/` and records it in
+`skills-lock.json`. It can also install the skill for other coding agents.
+Commit both.
+
+## Can I write specifications in Markdown?
+
+No. Specifications are YAML, JSON, or TOML, because the structure that makes
+slicing and checking possible has to be stored as data. Markdown is the
+output: `slcr render` generates a readable document from the specification.
+Prose fields inside a specification, such as a requirement's `body`, are
+written in Markdown.
+
+## Can I edit the rendered `SPEC.md`?
+
+Edits to `SPEC.md` don't carry back to the specification, and the next
+`slcr render` replaces them. Make changes in the specification file and
+render again. By default, `slcr render` refuses to overwrite a file it
+didn't generate.
+
+## Which languages and test frameworks does SLCR support?
+
+Any. SLCR has no built-in tools. A project declares the programs its
+validators run, such as a test runner, a linter, a structural code matcher,
+or a script, and each one is described by a small
+[tool descriptor](/docs/reference/tool-descriptors). If a program can check
+something and report the result with an exit code, a validator can use it.
+
+## Is it safe to run `slcr check` on a repository I cloned?
+
+`slcr check` runs the commands that a project's tool descriptors declare, the
+same way running a project's test suite runs its tests. Run it only in
+repositories you trust. `slcr vet` and `slcr render` never run project
+commands.
+
+## Which platforms does `slcr` run on?
+
+Release builds target macOS (Apple silicon and Intel) and Linux (x86_64 and
+ARM64). Windows isn't currently a build target. See
+[Installation](/docs/getting-started/installation).
 
 ## How does SLCR relate to other requirements formats?
 
-_Placeholder._
+Most requirements are written as prose documents. SLCR keeps the prose but
+stores the structure as data: each requirement, its links to other
+requirements, and the glossary terms it uses. That structure is what lets
+SLCR give an agent one requirement with only the context it needs, and check
+each requirement against the code.
+
+SLCR doesn't replace test frameworks or behavior-driven development tools.
+They can serve as validators: a project declares the tool, and its validators
+link individual tests or scenarios to the requirements they check.
 
 ## How do I propose a change to the standard?
 
-_Placeholder: link to the contribution process._
+Open an issue on [GitHub](https://github.com/wack/slcr/issues) before writing
+any code. Describe the problem with a real example, show the proposed change
+in an actual specification or validator file, explain how it affects the CLI,
+and say whether existing files stay valid. Accepted proposals update the
+schema and the reference implementation together. See
+[CONTRIBUTING.md](https://github.com/wack/slcr/blob/trunk/CONTRIBUTING.md)
+for the full process.
+
+## How do I report a bug or a security issue?
+
+For bugs, open an [issue](https://github.com/wack/slcr/issues) that includes
+the output of `slcr version`, the command you ran and what it printed, and
+the smallest files that reproduce the problem.
+
+Don't report security vulnerabilities in public issues. Email
+security@slcr.dev, or use GitHub's
+[private vulnerability reporting](https://github.com/wack/slcr/security/advisories/new).
+See the [Security](/security) page for details.

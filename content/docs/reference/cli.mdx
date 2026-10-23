@@ -1,0 +1,198 @@
+---
+title: CLI
+description: Every slcr command, its arguments and options, and its exit codes.
+order: 44
+---
+
+`slcr` is the reference command-line tool for SLCR. Run `slcr <command>
+--help` for the same information from the tool itself.
+
+## Global options
+
+These options apply to every command:
+
+| Option | Value |
+| --- | --- |
+| `--enable-colors <WHEN>` | `always`, `never`, or `auto`. `auto` colors output only on a terminal. Default: `auto`. |
+| `--log-level <LEVEL>` | `trace`, `debug`, `info`, `warn`, `error`, or `off`, case-insensitive. Also read from the `LOG_LEVEL` environment variable. Default: `info`. |
+| `-h`, `--help` | Print help. |
+
+Running `slcr` with no command prints the help and exits successfully.
+
+## Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | The command succeeded. |
+| `1` | The command failed: for example, vetting found an error, a requirement is unsatisfied, or a file couldn't be read. |
+| `2` | The command line was invalid: an unknown option, a missing or extra argument, or an argument with an invalid value. |
+
+## Commands that read one specification
+
+`slcr render`, `slcr slice`, and `slcr query` each read one specification
+file. The `FILE` argument is optional and defaults to `SPEC.slcr.toml`. The
+extension selects the format: `.yaml`, `.yml`, `.json`, or `.toml`. A
+specification that fails vetting is rejected.
+
+## `slcr init`
+
+Create a specification with its root and glossary sections.
+
+```
+slcr init [OPTIONS] [FILE]
+```
+
+| Argument or option | Value |
+| --- | --- |
+| `FILE` | The file to create. It MUST NOT exist. Default: `SPEC.slcr.toml`. |
+| `--name <NAME>` | The specification's name. Default: the file name without its extension and any `.slcr` or `.spec` suffix. For `SPEC.slcr.*`, the name of the containing directory. |
+| `--title <TITLE>` | The root section's title. Default: the specification's name. |
+
+If the working directory isn't inside a project, `init` also creates
+`SLCR.toml`, listing the new file in `specs`. Inside an existing project,
+the manifest is left unchanged, and `init` warns if the manifest's `specs`
+don't match the new file. `init` never overwrites a file and creates either
+both files or neither.
+
+## `slcr vet`
+
+Report the rules that specifications and validator files break, without
+running anything.
+
+```
+slcr vet [OPTIONS] [FILE]...
+```
+
+| Argument or option | Value |
+| --- | --- |
+| `FILE...` | Specification files to vet. With none, vet the whole project: `SLCR.toml`, the descriptors it pins, every specification its `specs` match, and every validator file. |
+| `--deny-warnings` | Fail when a file has warnings. |
+| `--format <FORMAT>` | `human` (diagnostics on stderr, then each file's status on stdout) or `json` (one JSON document on stdout). Default: `human`. |
+
+`vet` never uses the network. A pinned descriptor missing from the
+descriptor store is an error; `slcr tools install` fixes it.
+
+## `slcr check`
+
+Run every validator and report whether the requirements are satisfied.
+
+```
+slcr check [OPTIONS]
+```
+
+| Option | Value |
+| --- | --- |
+| `-j`, `--jobs <N>` | Run at most N validators at once. With 1, they run one at a time, in report order. Default: the number of CPUs. |
+| `--offline` | Never fetch a descriptor. A descriptor missing from the store fails vetting. |
+| `--deny-warnings` | Also fail on warnings: vetting warnings, unsatisfied `SHOULD` and `SHOULD NOT` requirements, and absorbed failures. |
+| `--format <FORMAT>` | `human` or `json`. Default: `human`. |
+
+`check` takes no file arguments: it always checks the whole project. It
+runs in this order:
+
+1. Install any pinned descriptor missing from the store, unless `--offline`.
+2. Vet the project. If vetting fails, nothing runs.
+3. Run every validator and report each result, in file and position order.
+4. Evaluate each specification and print a summary line.
+
+```console
+$ slcr check
+src/.validators.slcr.toml validator 1 (shop/REQ-002, sh): green
+src/mail/.validators.slcr.toml validator 1 (shop/REQ-006, sh): red (exit 1)
+shop: 6 satisfied, 1 unsatisfied, 0 unknown
+```
+
+`check` fails when vetting fails, when a validator can't be run, or when an
+unsatisfied `MUST` or `MUST NOT` requirement isn't absorbed. Unknown
+requirements and unsatisfied `MAY` requirements never fail it. The human
+format prints the end of each red validator's output. The JSON format
+includes each validator's full output.
+
+`check` runs the commands the project's descriptors declare. Run it only in
+repositories you trust, as you would a test suite.
+
+## `slcr render`
+
+Render a specification as Markdown.
+
+```
+slcr render [OPTIONS] [FILE]
+```
+
+| Option | Value |
+| --- | --- |
+| `-o`, `--output <PATH>` | Where to write the Markdown, or `-` for stdout. Default: the file name without its extension and any `.slcr` or `.spec` suffix, plus `.md`, in the same directory. `SPEC.slcr.toml` renders to `SPEC.md`. |
+| `--force` | Replace the output even if `slcr` didn't render it. |
+| `--expect-no-diff` | Write nothing, and fail unless the output already matches the rendering exactly. Can't be combined with `--force`. |
+
+Without `--force`, `render` refuses to replace a file that `slcr` didn't
+render.
+
+## `slcr slice`
+
+Print the slice for one requirement to stdout, as Markdown.
+
+```
+slcr slice [OPTIONS] <REQUIREMENT> [FILE]
+```
+
+| Argument | Value |
+| --- | --- |
+| `REQUIREMENT` | A requirement ID, such as `REQ-042`. An ID of another kind is rejected. |
+
+## `slcr query`
+
+Run a read-only GQL query over a specification.
+
+```
+slcr query [OPTIONS] <QUERY> [FILE]
+```
+
+| Argument or option | Value |
+| --- | --- |
+| `QUERY` | The query, in the [SLCR query profile](https://github.com/wack/gql-rust/blob/trunk/PROFILE.md) of GQL. |
+| `-p`, `--param <NAME=JSON>` | Bind `$NAME` in the query to a JSON value, such as `--param 'id="REQ-001"'` or `--param limit=5`. Repeat for each parameter. |
+| `--format <FORMAT>` | `table` (aligned columns, then a row count), `tsv` (a header line, then tab-separated rows), or `json`. Default: `table`. |
+
+The graph has these node labels and properties:
+
+| Label | Properties |
+| --- | --- |
+| `Section` | `id`, `title`, `body`, `spec` |
+| `Requirement` | `id`, `title`, `body`, `modality`, `rationale`, `refinement`, `spec` |
+| `AcceptanceCriterion` | `id`, `title`, `body`, `spec` |
+| `Term` | `id`, `title`, `definition`, `aliases`, `spec` |
+
+`spec` holds the specification's name. Optional properties are absent when
+the field is omitted.
+
+And these edge labels:
+
+| Label | From → To |
+| --- | --- |
+| `CONTAINS` | Parent → child section or requirement, with a `position` property giving sibling order |
+| `HAS_CRITERION` | Requirement → acceptance criterion |
+| `REFINES` | Requirement → requirement it refines |
+| `DEPENDS_ON` | Requirement → requirement or section it depends on |
+| `USES_TERM` | Section or requirement → term |
+
+## `slcr tools`
+
+Declare and inspect the tools validators run. Every `tools` subcommand
+requires a project.
+
+| Command | Effect |
+| --- | --- |
+| `slcr tools add <SOURCE> [--as <NAME>]` | Fetch a descriptor, check it, pin it, install it, and declare it in `SLCR.toml`. `SOURCE` is an `https://` URL or a path to a file inside the project. `--as` sets the tool name; the default is the descriptor's `name`. |
+| `slcr tools update <NAME>` | Fetch a declared tool's descriptor again from its source, check it, pin it again, and install it. Use it after editing a descriptor kept in the project. |
+| `slcr tools install` | Install every pinned descriptor not yet in the store, checking each against its pin. Never changes a pin. |
+| `slcr tools remove <NAME>` | Remove a tool from `SLCR.toml`. |
+| `slcr tools list [--format human\|json]` | List declared tools and whether each descriptor is installed. |
+| `slcr tools show <NAME> [--format human\|json]` | Print a declared tool's installed descriptor, including the schema its validators' `with` must satisfy. |
+
+`add`, `update`, and `remove` edit `SLCR.toml` in place, keeping the rest of
+the file unchanged.
+
+## `slcr version`
+
+Print the CLI's version.

@@ -17,12 +17,10 @@ export function findDoc(slug: string[]) {
   return allDocs.find((doc) => doc.slug.join("/") === slug.join("/"));
 }
 
-// "getting-started" -> "Getting Started"
-function titleCase(name: string) {
-  return name
-    .split("-")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+// "getting-started" -> "Getting started"
+function sentenceCase(name: string) {
+  const words = name.split("-").join(" ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
 function compareDocs(a: Doc, b: Doc) {
@@ -42,7 +40,7 @@ export function getDocSections(): DocSection[] {
     const key = doc.slug.length > 1 ? doc.slug[0] : "";
     let section = sections.get(key);
     if (!section) {
-      section = { key, title: key ? titleCase(key) : "Overview", docs: [] };
+      section = { key, title: key ? sentenceCase(key) : "Overview", docs: [] };
       sections.set(key, section);
     }
     section.docs.push(doc);

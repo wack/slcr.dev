@@ -1,7 +1,138 @@
 ---
-title: Writing Requirements
-description: Practical advice for writing clear SLCR requirements.
+title: Writing requirements
+description: How to write requirements that are checkable and that slice well.
 order: 30
 ---
 
-_Placeholder: patterns, anti-patterns, and worked examples._
+This guide covers how to write the content of a specification: individual
+requirements, how they relate, and where to put background so that slices
+include it. For field names and syntax, see the
+[Specification reference](/docs/reference/specification). Run `slcr vet`
+after each edit to catch structural errors.
+
+## Write one testable statement per requirement
+
+A requirement's `body` states one thing a validator can check, using its
+modality keyword in capitals:
+
+```yaml
+- kind: requirement
+  id: REQ-002
+  title: POST creates an item
+  body: The endpoint MUST accept POST to create an item.
+  modality: MUST
+```
+
+- If a body joins two behaviors with "and", split it into two requirements
+  that refine a parent with `refinement: AND`.
+- If no validator could show that a requirement holds, make it more
+  specific.
+- Put the reason for a requirement in `rationale`, and keep `body` to the
+  statement itself.
+- Keep a parent's body a real statement about the whole, such as "There
+  MUST be an endpoint for the TodoListItem resource." Its refiners state the
+  parts.
+
+## Choose the modality
+
+| Use | When a failure should |
+| --- | --- |
+| `MUST`, `MUST NOT` | Fail `slcr check` |
+| `SHOULD`, `SHOULD NOT` | Produce a warning, which fails `check` only with `--deny-warnings` |
+| `MAY` | Be reported for information only |
+
+For `MUST NOT` and `SHOULD NOT`, write validators that check the forbidden
+behavior is absent. No special structure is needed.
+
+## Link requirements explicitly
+
+- **Add `refines` for every child that contributes to its parent**, including
+  a child nested directly under that parent. Nesting alone never counts
+  toward satisfaction.
+- **Pick the parent's operator for what you mean.** "Accepts OAuth tokens or
+  API keys" is `OR` over two `MAY` children. "Accepts OAuth tokens and API
+  keys" is `AND` over two `MUST` children.
+- **Write a shared requirement once.** If both POST and GET require
+  authentication, put the requirement in one place and list both parents in
+  `refines`.
+- **Use `dependsOn` for context, not satisfaction.** If an implementer needs
+  another requirement or section to do the work, link it with `dependsOn`.
+
+See [Links and Satisfaction](/docs/concepts/links-and-satisfaction) for how
+each link behaves.
+
+## Structure the spec so it slices well
+
+A slice includes a requirement's ancestors, its refiners, its dependencies,
+and the terms it uses. Nothing else reaches it. To make sure an implementer
+gets the context they need:
+
+1. **Put shared background in a common ancestor's `body`.** A section's body
+   reaches every slice beneath it. Background in a sibling section doesn't
+   reach neighboring requirements.
+2. **Add `dependsOn` for anything else the implementer needs.** Without the
+   link, the slice won't include it.
+3. **Define domain terms once in the glossary**, and link them with
+   `usesTerm` from every node that uses them. Prose is never linked to terms
+   automatically. Keep `glossary.terms` in ID order.
+4. **Group requirements under sections the way a reader looks for them**: by
+   component, layer, or command.
+5. **Read the slice.** Run `slcr slice REQ-ID` and check that it contains
+   what an implementer needs. If something is missing, add the link or move
+   the background, rather than giving the implementer the whole document.
+
+## Add acceptance criteria in a second pass
+
+Write requirements first. Then, one requirement at a time:
+
+1. Run `slcr slice REQ-ID`, so you write from the context an implementer will
+   have.
+2. Add `acceptanceCriteria` describing what "done" looks like, concretely
+   enough that someone could write a check.
+3. Describe behavior only. The code doesn't exist yet, so don't name files,
+   functions, or code patterns.
+
+A requirement without criteria is valid, but criteria make it clearer what a
+validator should check.
+
+## Assign IDs
+
+- Give each new node the next unused number for its kind. To find the
+  highest requirement ID:
+
+  ```bash
+  slcr query "MATCH (n) WHERE n.id STARTS WITH 'REQ-' RETURN n.id ORDER BY n.id DESC LIMIT 1"
+  ```
+
+  Change the prefix for other kinds (`SEC-`, `AC-`, `TERM-`). The query
+  sorts IDs as text, so it stops giving the right answer once a kind passes
+  999.
+- Never renumber a node or reuse a deleted ID. Validators refer to IDs, and
+  a reused ID silently changes what they check.
+- Moving a node elsewhere in the tree doesn't change its ID.
+
+## Edit nested TOML carefully
+
+In TOML, each `[[...]]` header attaches to the most recently opened parent:
+
+```toml
+[[root.children]]                              # a section under the root
+kind = "section"
+id = "SEC-003"
+title = "Controllers"
+
+[[root.children.children]]                     # a requirement under SEC-003
+kind = "requirement"
+id = "REQ-005"
+# ...
+
+[[root.children.children.acceptanceCriteria]]  # a criterion of REQ-005
+kind = "acceptanceCriterion"
+id = "AC-002"
+# ...
+```
+
+A new `[[root.children]]` closes everything opened under the previous one.
+To add a child to an earlier node, insert it directly after that node's
+existing children, not at the end of the file. If a node lands under the
+wrong parent, `slcr render --output -` shows where it went.

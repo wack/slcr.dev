@@ -71,7 +71,7 @@ Adding a page needs no route or component code. The file is the page.
 
    ```mdx
    ---
-   title: Getting Started
+   title: Getting started
    description: One sentence, used on the /docs index and as the meta description.
    ---
 
@@ -86,18 +86,22 @@ Adding a page needs no route or component code. The file is the page.
    escape it (`\{`, `\<`) or put it in a code span. Plain HTML elements such
    as `<kbd>` work. Importing project components from MDX is not set up. To
    make a React component available, pass it through the `components` prop of
-   `<MDXContent>` in `app/docs/[...slug]/page.tsx`.
+   `<MDXContent>` in `app/docs/[...slug]/page.tsx`. Links to other sites get
+   an external-link arrow automatically, on docs and site pages alike
+   (`mdxComponents` in `lib/mdx-components.tsx`), so don't add an icon by
+   hand.
 4. Check it with `pnpm dev`. The watcher recompiles on save, and the page
    appears at its URL and in the `/docs` index. Then run `pnpm build`. It must
    pass, and its route table should list the new path under
    `/docs/[...slug]`.
 
 Docs are grouped in the sidebar and on `/docs` by top-level directory
-(`getting-started/` → "Getting Started"; top-level files → "Overview"). Within
+(`getting-started/` → "Getting started"; top-level files → "Overview"). Within
 and across sections they sort by the optional `order` frontmatter number, so a
 section's position is set by its lowest `order`. Current convention: Overview
-1–9, Getting Started 10s, Concepts 20s, Guides 30s, Reference 40s. Grouping
-logic lives in `lib/docs.ts`.
+1–9, Getting started 10s, Concepts 20s, Guides 30s, Reference 40s. Write doc
+titles in sentence case, matching the section labels. Grouping logic lives in
+`lib/docs.ts`.
 
 Renaming or moving a file changes its URL. To add a frontmatter field, add it
 to the zod schema in `content-collections.ts`. The field is then typed on

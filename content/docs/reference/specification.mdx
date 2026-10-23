@@ -1,16 +1,216 @@
 ---
 title: Specification
-description: The normative definition of the SLCR format.
+description: The normative definition of the SLCR specification file format.
 order: 40
 ---
 
-_Placeholder: the full specification. Use MUST, SHOULD, and MAY as defined in
-[RFC 2119](https://www.rfc-editor.org/rfc/rfc2119)._
+This page defines the format of an SLCR specification file. The key words
+MUST, MUST NOT, SHOULD, SHOULD NOT, and MAY are used as defined in
+[RFC 2119](https://www.rfc-editor.org/rfc/rfc2119). For the ideas behind the
+format, see [Specifications](/docs/concepts/specifications) and
+[Links and Satisfaction](/docs/concepts/links-and-satisfaction).
 
 ## Conformance
 
-_Placeholder._
+A specification file conforms to format version `"1"` when it satisfies
+every rule on this page. `slcr vet` checks every rule and reports each
+violation as an error, unless this page says otherwise.
 
-## Document structure
+## Files
 
-_Placeholder._
+A specification is one file in TOML, YAML, or JSON. The extension selects
+the format:
+
+| Extension | Format |
+| --- | --- |
+| `.toml` | TOML |
+| `.yaml`, `.yml` | YAML |
+| `.json` | JSON |
+
+The well-known file name is `SPEC.slcr.toml`. Commands that read one
+specification read this file when no file is named.
+
+All three formats describe the same graph. Field names are camelCase in
+every format.
+
+## Canonical form
+
+The format has exactly one valid spelling for each graph:
+
+- Unknown fields MUST NOT appear, at any level.
+- An optional field that is empty MUST be omitted. An empty array, an empty
+  string, or `null` is an error.
+- Arrays of IDs (`refines`, `dependsOn`, `usesTerm`) MUST be non-empty and
+  MUST NOT contain duplicates.
+- The terms in `glossary.terms` MUST appear in ID order.
+- Sibling order is the order of the `children` array. Nodes have no order
+  field.
+
+## Top level
+
+| Field | Required | Value |
+| --- | --- | --- |
+| `$schema` | No | The URL of the JSON Schema the file conforms to. |
+| `formatVersion` | Yes | The string `"1"`. |
+| `spec` | Yes | A table with one field, `name`. |
+| `spec.name` | Yes | The specification's name: lowercase letters and digits in dash-separated words, such as `todo-api`. |
+| `root` | Yes | The root section. Every section and requirement is nested under it. |
+| `glossary` | Yes | The glossary section, which holds every term. |
+
+The spec name qualifies IDs outside the file, as in `todo-api/REQ-002`.
+Renaming a specification changes every qualified ID that refers to it.
+
+## IDs
+
+| Kind | Prefix |
+| --- | --- |
+| Section | `SEC-` |
+| Requirement | `REQ-` |
+| Acceptance criterion | `AC-` |
+| Term | `TERM-` |
+
+- An ID MUST be its kind's prefix followed by a number. Numbers up to 999
+  MUST be written with exactly three digits, zero-padded (`REQ-042`).
+  Numbers from 1000 on are written without padding (`REQ-1000`).
+- An ID's prefix MUST match the node's `kind`.
+- Each ID MUST be unique within the file.
+- Numbers SHOULD increase across the whole specification, separately for
+  each kind. For example, acceptance criteria are numbered `AC-001`,
+  `AC-002`, and so on across all requirements, not per requirement. A new
+  node SHOULD take the next unused number of its kind.
+- An ID MUST NOT be renumbered or reused once assigned. `slcr vet` can't
+  detect reuse, so this rule depends on authors and tools.
+
+## Common fields
+
+Every node has these fields:
+
+| Field | Required | Value |
+| --- | --- | --- |
+| `kind` | Yes | `section`, `requirement`, `acceptanceCriterion`, or `term`. |
+| `id` | Yes | The node's ID. |
+| `title` | Yes | One non-empty line, with no leading or trailing whitespace. |
+
+Prose fields (`body`, `rationale`, `definition`) are non-empty Markdown and
+are rendered as written.
+
+## Section
+
+| Field | Required | Value |
+| --- | --- | --- |
+| `body` | No | Background prose. Every slice beneath the section includes it. |
+| `usesTerm` | No | Term IDs. |
+| `children` | No | Sections and requirements. |
+
+A section has no satisfaction status.
+
+## Requirement
+
+| Field | Required | Value |
+| --- | --- | --- |
+| `body` | Yes | The statement. |
+| `modality` | Yes | `MUST`, `MUST NOT`, `SHOULD`, `SHOULD NOT`, or `MAY`. |
+| `rationale` | No | Why the requirement exists. |
+| `refinement` | See below | `AND`, `OR`, or `XOR`. |
+| `refines` | No | IDs of requirements this one helps satisfy. |
+| `dependsOn` | No | IDs of requirements or sections needed to understand or implement this one. |
+| `usesTerm` | No | Term IDs. |
+| `acceptanceCriteria` | No | Acceptance criterion nodes. |
+| `children` | No | Requirements only. |
+
+- `refinement` MUST be present when at least one requirement refines this
+  one, and MUST be absent otherwise.
+- The `body` SHOULD contain the modality keyword in capitals. If it doesn't,
+  `slcr vet` reports a warning.
+
+## Acceptance criterion
+
+| Field | Required | Value |
+| --- | --- | --- |
+| `body` | Yes | What "done" looks like for the requirement that holds it. |
+
+An acceptance criterion appears only in a requirement's
+`acceptanceCriteria`. It has no children.
+
+## Glossary and terms
+
+The glossary is a section with these fields:
+
+| Field | Required | Value |
+| --- | --- | --- |
+| `kind`, `id`, `title` | Yes | As for any section. |
+| `body` | No | Prose about the glossary. |
+| `terms` | No | Term nodes, in ID order. |
+
+A term has these fields:
+
+| Field | Required | Value |
+| --- | --- | --- |
+| `definition` | Yes | The term's meaning. |
+| `aliases` | No | Other titles for the term. |
+
+Terms appear only in `glossary.terms`.
+
+## Links
+
+| Field | From | To |
+| --- | --- | --- |
+| `refines` | Requirement | Requirement |
+| `dependsOn` | Requirement | Requirement or section |
+| `usesTerm` | Section or requirement | Term |
+
+- Every ID in a link MUST name a node in the same file.
+- `refines` links MUST NOT form a cycle. `dependsOn` links MUST NOT form a
+  cycle.
+
+## Findings reported by `slcr vet`
+
+Besides parse errors, which report the location of a malformed or unknown
+field, `slcr vet` reports these findings. The code appears in
+`--format json` output.
+
+| Code | Severity | Meaning |
+| --- | --- | --- |
+| `duplicate-id` | Error | An ID identifies more than one node. |
+| `dangling-reference` | Error | A link names an ID that doesn't exist. |
+| `cycle` | Error | `refines` or `dependsOn` links form a cycle. |
+| `missing-refinement` | Error | A requirement is refined but has no `refinement`. |
+| `unexpected-refinement` | Error | A requirement has a `refinement` but nothing refines it. |
+| `term-out-of-order` | Error | `glossary.terms` isn't in ID order. |
+| `modality-not-stated` | Warning | A requirement's body doesn't contain its modality keyword. |
+| `vacuous-and` | Warning | Every refiner of an `AND` requirement is `MAY`, so it is satisfied with nothing to evaluate. |
+
+## Example
+
+```yaml
+$schema: https://slcr.dev/reference/schemas/spec/v1.schema.json
+formatVersion: "1"
+spec:
+  name: todo-api
+root:
+  kind: section
+  id: SEC-001
+  title: TodoList API
+  body: A REST web application in MVC layout with one resource.
+  children:
+    - kind: requirement
+      id: REQ-007
+      title: Table todo_list_item exists
+      body: There MUST be a table `todo_list_item` with columns `title` (string) and `done` (bool).
+      modality: MUST
+      usesTerm: [TERM-001]
+      acceptanceCriteria:
+        - kind: acceptanceCriterion
+          id: AC-001
+          title: Table schema is declared
+          body: A table named `todo_list_item` is declared with a string column `title` and a boolean column `done`.
+glossary:
+  kind: section
+  id: SEC-002
+  title: Glossary
+  terms:
+    - kind: term
+      id: TERM-001
+      title: TodoListItem
+      definition: A single item on a to-do list, with a title and a done flag.
+```
