@@ -1,0 +1,140 @@
+---
+title: Slices
+description: What a slice contains, what it leaves out, and how slicing shapes the way a spec should be written.
+order: 22
+---
+
+A **slice** is the part of a spec that one requirement needs: everything an
+agent, or a person, needs to understand and implement that requirement, and
+nothing more. `slcr slice REQ-ID` writes it to stdout as Markdown that reads
+like a short version of the rendered spec.
+
+Slicing is the answer to context rot. An agent handed a whole requirements
+document has to work out which parts matter for its task, and it gets that
+wrong more often as the document grows. A slice makes that decision ahead of
+time, by following the spec's [links](/docs/concepts/links-and-satisfaction)
+instead of leaving it to the agent's judgment.
+
+## What a slice holds
+
+For a requirement `R`, the slice holds:
+
+- **`R`'s ancestors**, as headings with their bodies. This is the background
+  that every Section and requirement above `R` provides.
+- **`R` and everything that refines it**, in full, with acceptance criteria.
+  This includes refiners nested elsewhere in the tree: the slice of
+  `todo-api`'s GET requirement includes the authentication requirement, even
+  though that requirement is nested under POST.
+- **What `R` refines**, under "Related requirements", so the implementer knows
+  what the work is part of.
+- **Everything `R` and its refiners depend on**, following `dependsOn`
+  links all the way down, also under "Related requirements". Each one appears
+  with its acceptance criteria and with the Sections it sits in, so its
+  background comes along too.
+- **A Glossary** of the terms used by everything above.
+
+A node included for more than one reason is shown in the most detail any of
+those reasons calls for. Nodes keep their numbers from the full document,
+and a reference to a node outside the slice becomes its plain title, so every
+link in the slice works.
+
+## What a slice leaves out
+
+A slice leaves out everything not reachable from the requirement:
+
+- **Sibling requirements.** They're someone else's work. Seeing them invites
+  an agent to build them too, or to mix their details into its own work.
+- **The internals of dependencies.** A dependency shows its own statement and
+  criteria, not the requirements that refine it.
+- **Unrelated Sections**, however close by in the document.
+
+## An example
+
+In `todo-api`, the controller requirement `REQ-005` is refined by "Validates
+the request payload" and depends on the endpoint (`REQ-001`) and the table
+(`REQ-007`). Here is its slice, with link anchors removed and the glossary
+simplified:
+
+```markdown
+# TodoList API
+
+A REST web application in MVC layout with one resource.
+
+## 2. Controllers
+
+### 2.1 TodoListItem controller
+
+There MUST be a controller for TodoListItem.
+
+All of the following must hold:
+
+- Validates the request payload
+
+*Depends on:* TodoListItem endpoint, Table todo_list_item exists
+
+#### 2.1.1 Validates the request payload
+
+The controller MUST validate the request payload.
+
+## Related requirements
+
+### 1. Views
+
+The API surface.
+
+### 1.1 TodoListItem endpoint
+
+*In:* TodoList API › Views
+
+There MUST be an endpoint for the TodoListItem resource.
+
+### 3. Models
+
+Persistence assumptions.
+
+### 3.1 Table todo_list_item exists
+
+*In:* TodoList API › Models
+
+There MUST be a table `todo_list_item` with columns `title` (string) and `done` (bool).
+
+*Acceptance criteria:*
+
+**Table schema is declared**
+
+A table named `todo_list_item` is declared with a string column `title` and a
+boolean column `done`. A structural match against the schema or migration
+source is sufficient.
+
+## 5. Glossary
+
+TodoListItem
+: A single item on a to-do list, with a title and a done flag.
+```
+
+The controller's implementer gets the endpoint and the table it has to work
+with, and the meaning of "TodoListItem". It doesn't get the POST and GET
+requirements under the endpoint, and it doesn't get the Authentication
+section at all. Authentication matters to the API, but it isn't the
+controller's job.
+
+## Writing specs that slice well
+
+Because a slice follows links and ancestry, where you put information
+decides who sees it:
+
+- **Put shared background in a common ancestor.** A Section's body reaches
+  every slice beneath it. Background in a sibling Section never reaches the
+  requirements next to it.
+- **Link what an implementer needs.** If a requirement can't be built without
+  knowing about something elsewhere in the spec, add a `dependsOn` link to
+  it. Otherwise the slice won't include it.
+- **Define words in the Glossary and link them.** A term reaches a slice only
+  through `usesTerm`.
+- **Read the slice before you rely on it.** `slcr slice` shows exactly what an
+  implementer will see. If something is missing, fix the spec's structure.
+  Don't fix it by handing the agent the whole document.
+
+Slices help people too. A reviewer checking one change can read the slice of
+the requirement it implements, instead of finding the relevant parts of a
+long document.

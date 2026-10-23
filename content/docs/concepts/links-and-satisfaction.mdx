@@ -1,0 +1,185 @@
+---
+title: Links and Satisfaction
+description: How requirements connect to each other, and how those links decide whether each requirement is satisfied.
+order: 21
+---
+
+Requirements don't stand alone. Some break a larger requirement into parts,
+some need context from elsewhere in the spec, and some use terminology from
+elsewhere in the document. SLCR records each of these as an explicit link,
+so tools can follow them. One kind of link, `refines`, also decides how
+the results of individual checks combine into a verdict for the whole spec.
+
+## Four ways nodes connect
+
+| Link | From → To | Means | Counts toward satisfaction? |
+| --- | --- | --- | --- |
+| Nesting | Section → Section or Requirement; Requirement → Requirement or criterion | "I'm placed here" | Never |
+| `refines` | Requirement → Requirement | "I help satisfy that" | Yes, and it's the only link that does |
+| `dependsOn` | Requirement → Requirement or Section | "You need that to understand or implement me" | Never |
+| `usesTerm` | Section or Requirement → Term | "I use this word" | Never |
+
+All four also decide what goes into a [slice](/docs/concepts/slices).
+
+### Nesting provides structure
+
+Nesting decides where a node appears in the rendered document and which
+Section bodies it inherits as background. It says nothing about whether a
+child helps satisfy its parent.
+
+**Nesting never implies refinement.** A child requirement counts toward its
+parent only when it lists the parent in `refines`, even when the parent is
+the node it's nested in. In the `todo-api` spec, "POST creates an item" sits
+inside "TodoListItem endpoint" and also says so explicitly:
+
+```yaml
+- kind: requirement
+  id: REQ-001
+  title: TodoListItem endpoint
+  body: There MUST be an endpoint for the TodoListItem resource.
+  modality: MUST
+  refinement: AND
+  children:
+    - kind: requirement
+      id: REQ-002
+      title: POST creates an item
+      body: The endpoint MUST accept POST to create an item.
+      modality: MUST
+      refines: [REQ-001]
+```
+
+A child nested without `refines` elaborates on its parent without
+contributing to it. It's judged only by its own validators.
+
+### One home, many parents
+
+Some requirements serve several parents. In `todo-api`, both POST and GET
+need the request to be authenticated. That requirement lives in one place in
+the tree and lists every parent it serves:
+
+```yaml
+- kind: requirement
+  id: REQ-004
+  title: Request is authenticated
+  body: The request MUST be authenticated.
+  modality: MUST
+  refines: [REQ-002, REQ-003]
+```
+
+Writing it twice, once under each parent, would let the two copies drift
+apart. With one copy and two `refines` links, there's one statement, one set
+of validators, and one result that counts toward both parents.
+
+### Dependencies are context
+
+`dependsOn` says what an implementer needs to know. The TodoListItem
+controller, `REQ-005`, depends on the endpoint it serves (`REQ-001`) and the
+table it reads and writes (`REQ-007`). The controller isn't satisfied when the
+endpoint is, so this isn't refinement, but nobody can build the controller
+without knowing the endpoint's shapes and the table's columns. A
+`dependsOn` link brings that context into the controller's slice and has no
+effect on satisfaction.
+
+### Terms
+
+`usesTerm` links a Section or Requirement to the glossary entries it relies
+on, so a slice can include their definitions. It never affects satisfaction.
+
+`refines` and `dependsOn` links can't form cycles. `slcr vet` reports a
+cycle as an error, along with any link to an ID that doesn't exist.
+
+## Satisfaction
+
+`slcr check` runs every validator, and then works out a status for every
+requirement:
+
+- **Satisfied**: the validators and refinements show it holds.
+- **Unsatisfied**: they show it doesn't.
+- **Unknown**: nothing decides it yet.
+
+### Leaves
+
+A requirement that nothing refines is a leaf. Its status comes from its own
+validators: it's satisfied when all of them pass and unsatisfied when any
+fails. A leaf with no validators is **unknown**, which `check` reports as a
+coverage gap. A coverage gap shows where the spec isn't proven yet, but it
+never counts as a failure.
+
+### Combining refinements
+
+A requirement that others refine must say how to combine them, with its
+`refinement` field:
+
+| Refinement | Satisfied when |
+| --- | --- |
+| `AND` | Every refiner is satisfied. `MAY` refiners are left out, so an optional part can't block its parent. |
+| `OR` | At least one refiner is satisfied. |
+| `XOR` | Exactly one refiner is satisfied, and the rest are unsatisfied. |
+
+If a requirement has validators of its own as well as refiners, both must
+hold: its validators' result is ANDed with its refiners' result.
+
+The operator is part of what the spec means, so choose it deliberately. The
+`todo-api` spec says the API accepts OAuth tokens or API keys:
+
+```yaml
+- kind: requirement
+  id: REQ-008
+  title: Accepts authentication tokens
+  body: The API MUST accept OAuth tokens or API keys.
+  modality: MUST
+  refinement: OR
+  children:
+    - kind: requirement
+      id: REQ-009
+      title: Accepts OAuth tokens
+      body: The API MAY accept OAuth tokens.
+      modality: MAY
+      refines: [REQ-008]
+    - kind: requirement
+      id: REQ-010
+      title: Accepts API keys
+      body: The API MAY accept API keys.
+      modality: MAY
+      refines: [REQ-008]
+```
+
+If the API had to accept both, the parent would be `AND` over two `MUST`
+children. The two specs read almost the same in prose, but the difference
+between them is recorded in the data, so `check` evaluates each one
+correctly.
+
+### Unknowns
+
+Unknowns combine using strong Kleene logic: a status is decided only when
+every possible outcome of the unknowns would give the same answer.
+
+- An `AND` with one unsatisfied refiner is unsatisfied, whatever the unknowns
+  turn out to be.
+- An `OR` with one satisfied refiner is satisfied, whatever the unknowns turn
+  out to be.
+- An `AND` whose refiners are all satisfied except one unknown is unknown,
+  because the answer depends on the unknown.
+
+So a spec that is only partly covered by validators still gets every result
+that can already be decided, without guessing at the rest.
+
+### Modality sets severity
+
+Whether a requirement is satisfied and how much a failure matters are
+separate questions. The first comes from validators and refinements. The
+second comes from the requirement's modality:
+
+| Modality | When unsatisfied |
+| --- | --- |
+| `MUST`, `MUST NOT` | A violation, which fails `check` |
+| `SHOULD`, `SHOULD NOT` | A warning, which fails `check` only with `--deny-warnings` |
+| `MAY` | Informational, which never fails `check` |
+
+`MUST NOT` and `SHOULD NOT` need no special structure. Their validators check
+that the forbidden thing is absent.
+
+A failure is **absorbed** when every requirement it refines is satisfied
+anyway, such as one alternative of an `OR` failing while another passes. An
+absorbed failure is downgraded to a warning, or stays informational if it's
+a `MAY`. Unknown requirements never fail `check`, even with `--deny-warnings`.
