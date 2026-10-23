@@ -3,7 +3,6 @@
 import { Check, Copy } from "lucide-react";
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 
-// TODO: placeholders until the CLI, skill, and MCP server are published.
 const options = [
   {
     label: "Prompt",
@@ -11,9 +10,12 @@ const options = [
       "Set up SLCR requirements for this project by following https://slcr.dev/docs/getting-started/quickstart",
     mono: false,
   },
-  { label: "CLI", command: "cargo install slcr", mono: true },
+  {
+    label: "CLI",
+    command: "cargo install --git https://github.com/wack/slcr --locked",
+    mono: true,
+  },
   { label: "Skill", command: "npx skills add wack/slcr", mono: true },
-  { label: "MCP", command: "claude mcp add slcr -- slcr mcp", mono: true },
 ];
 
 // Tabs of copy-paste commands, one per way to get started. Follows the WAI-ARIA

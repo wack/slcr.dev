@@ -59,12 +59,12 @@ validators, and how to learn the CLI from `--help`. It's written in the
 format. To add it to a repository, run this from the repository root:
 
 ```bash
-mkdir -p .claude/skills
-curl -fsSL https://github.com/wack/slcr/archive/refs/heads/trunk.tar.gz \
-  | tar -xz --strip-components=2 -C .claude/skills slcr-trunk/skills/slcr
+npx skills add wack/slcr
 ```
 
-Commit `.claude/skills/slcr/`. Run the same command again to update it.
+This installs the skill into `.claude/skills/slcr/` and records it in
+`skills-lock.json`. It can also install the skill for other coding agents.
+Commit both.
 
 ## Can I write specifications in Markdown?
 
