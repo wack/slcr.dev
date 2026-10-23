@@ -13,7 +13,7 @@ everything.
 
 Specs should be optimized for humans and agents alike. SLCR provides an agent-native
 format for AI agents without sacrificing human readability. SLCR achieves this by
-storeing a project's requirements as a graph instead of a text blob. An
+storing a project's requirements as a graph instead of a text blob. An
 agent reads a _slice_ of the graph: one requirement plus the context it needs
 to implement it, and nothing else. People read Markdown rendered from the same
 graph. Validators that live beside your code check each requirement, so "does
@@ -40,8 +40,8 @@ Two problems get in the way on long-running work:
 - **Context rot.** Give an agent a long requirements document and it will mix
   up details or drop instructions. The more prose up front, the worse it gets.
 - **Compounding drift.** A small chance of misreading the spec when drafting a ticket
-  compounds errors as the requirement moves from spec to ticking, ticking to implementation,
-  and implementation to test and release . By the end, something has usually
+  compounds errors as the requirement moves from spec to ticket, ticket to implementation,
+  and implementation to test and release. By the end, something has usually
   drifted, and there's no cheap way to restart from the point of deviation.
 
 SLCR solves the first problem by giving agents slices instead of whole
@@ -75,7 +75,7 @@ matters. Requirements are connected by edges:
   its refiners with `AND`, `OR`, or `XOR`, so the difference between "OAuth
   tokens _or_ API keys" and "OAuth tokens _and_ API keys" is stored in the
   data, not left to how the sentence is worded. These boolean logic operators
-  respected when determining whether a requirement is satisfied.
+  are respected when determining whether a requirement is satisfied.
 - **`dependsOn`**: an implementer needs another requirement or Section to
   understand or implement this one.
 - **`usesTerm`**: this node uses a glossary term.
@@ -95,7 +95,7 @@ toward satisfaction.
 A slice leaves out sibling requirements. An agent building a controller gets
 the endpoint shapes and table columns it depends on, but not the
 authentication rules someone else is implementing. Reducing context also reduces
-the change of agent confusion, and reduces scope creep within a session.
+the chance of agent confusion, and reduces scope creep within a session.
 
 ### Validators assay requirements
 
