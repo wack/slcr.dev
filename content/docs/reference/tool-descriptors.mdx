@@ -1,0 +1,124 @@
+---
+title: Tool descriptors
+description: The normative definition of tool descriptors, which describe how SLCR runs the tools validators use.
+order: 43
+---
+
+This page defines tool descriptors. The key words MUST, MUST NOT, SHOULD,
+and MAY are used as defined in
+[RFC 2119](https://www.rfc-editor.org/rfc/rfc2119). For the ideas behind
+descriptors, see [Validators](/docs/concepts/validators).
+
+A descriptor is a TOML file. It is declarative: SLCR reads it and runs the
+command it describes, but the descriptor itself is never executed.
+
+## Fields
+
+| Field | Required | Value |
+| --- | --- | --- |
+| `formatVersion` | Yes | The string `"1"`. |
+| `name` | Yes | The default tool name: lowercase letters and digits in dash-separated words. |
+| `version` | Yes | The descriptor's SemVer 2.0.0 version. This is the version of the descriptor, not of the tool it runs. |
+| `validator.schema` | Yes | The JSON Schema every validator's `with` must satisfy. |
+| `invoke` | Yes | How to run the tool. |
+| `results` | No | How to read the outcome. |
+
+Unknown fields MUST NOT appear.
+
+```toml
+formatVersion = "1"
+name = "cargo-nextest"
+version = "1.0.0"
+
+[validator.schema]
+type = "object"
+required = ["test"]
+additionalProperties = false
+properties.test = { type = "string", minLength = 1, description = "Fully qualified test name." }
+
+[invoke]
+argv = ["cargo", "nextest", "run", "--no-fail-fast", "--no-tests=fail",
+        "-E", "test(={with.test})"]
+cwd = { nearest = "Cargo.toml" }
+
+[results]
+pass = [0]
+```
+
+## `validator.schema`
+
+- The schema MUST be a valid JSON Schema (draft 2020-12), written as TOML.
+- Its top level MUST have `type = "object"`.
+- Every `$ref` MUST resolve within the schema itself.
+- It MUST NOT contain TOML dates or times.
+
+## `invoke`
+
+| Field | Required | Value |
+| --- | --- | --- |
+| `argv` | Yes | The command, as an array: a program name, then argument templates. |
+| `cwd` | Yes | The working directory. |
+| `env` | No | A table of environment variables to set or override. If present, it MUST NOT be empty. |
+| `timeout` | No | Seconds before the run is killed, as a positive integer. Without it, there is no timeout. |
+
+The command runs directly, never through a shell, with standard input
+closed. The child process inherits the environment, with `env` applied on
+top.
+
+### `argv`
+
+- The first element MUST be a bare program name, such as `cargo`. It is
+  looked up on `PATH`. It MUST NOT contain a path separator or a placeholder.
+- Each later element is exactly one argument. Substitution never splits or
+  joins arguments.
+
+### Placeholders
+
+Arguments MAY contain placeholders:
+
+| Placeholder | Value |
+| --- | --- |
+| `{with.<field>}` | A top-level field of the validator's `with`. |
+| `{slcr.project_root}` | The directory that holds `SLCR.toml`. |
+| `{slcr.validator_dir}` | The directory that holds the validator file. |
+| `{slcr.requirement}` | The qualified requirement ID, such as `todo-api/REQ-002`. |
+
+- A field named by `{with.<field>}` MUST be declared in the schema's
+  top-level `properties`, MUST be listed in `required`, and MUST be a scalar
+  type: `string`, `number`, `integer`, or `boolean`.
+- `{{` and `}}` write a literal brace. A lone `{` or `}` is an error.
+
+### `cwd`
+
+| Value | Directory |
+| --- | --- |
+| `"project"` | The project root. |
+| `"validator-dir"` | The directory that holds the validator file. |
+| `{ nearest = "<file>" }` | The closest of the validator's directory and its ancestors, up to the project root, that contains an entry named `<file>`. `<file>` MUST be a file name, not a path. |
+
+If the directory can't be found, the validator can't be run.
+
+### `env`
+
+Variable names MUST match `^[A-Za-z_][A-Za-z0-9_]*$`. Values are literal
+strings.
+
+## `results`
+
+| Field | Required | Value |
+| --- | --- | --- |
+| `pass` | No | The exit codes that mean green, as a non-empty array with no duplicates. Defaults to `[0]`. |
+
+Any other exit code, a signal, or a timeout means red.
+
+## Pins and the descriptor store
+
+A project declares each descriptor in `SLCR.toml` with a pin: the BLAKE3
+hash of the descriptor's exact bytes. Any change to a descriptor, including
+whitespace, requires a new pin, made with `slcr tools update`.
+
+Installed descriptors are stored on each machine under the platform's data
+directory (`$XDG_DATA_HOME/slcr` on Linux), filed by pin. Projects that pin
+the same bytes share one stored file. SLCR checks a stored descriptor
+against its pin before every use and replaces one that doesn't match when
+installing.

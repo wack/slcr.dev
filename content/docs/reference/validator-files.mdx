@@ -1,0 +1,91 @@
+---
+title: Validator files
+description: The normative definition of validator files, which tie requirements to the tools that check them.
+order: 42
+---
+
+This page defines validator files. The key words MUST, MUST NOT, SHOULD,
+and MAY are used as defined in
+[RFC 2119](https://www.rfc-editor.org/rfc/rfc2119). For the ideas behind
+validators, see [Validators](/docs/concepts/validators).
+
+## Names and discovery
+
+- A validator file MUST be named `.validators.slcr.toml`,
+  `.validators.slcr.yaml`, `.validators.slcr.yml`, or
+  `.validators.slcr.json`. The extension selects the format.
+- A directory MUST hold at most one validator file. `slcr vet` reports a
+  second one as `duplicate-validator-file`.
+- `slcr` finds validator files by walking the project root. The walk
+  includes hidden files and directories, other than `.git`, and skips
+  anything git ignores. No entry in `SLCR.toml` is needed.
+
+## Fields
+
+| Field | Required | Value |
+| --- | --- | --- |
+| `formatVersion` | Yes | The string `"1"`. |
+| `validator` | Yes | An array of validator entries. In TOML, each entry is a `[[validator]]` table. |
+
+Each validator entry has these fields:
+
+| Field | Required | Value |
+| --- | --- | --- |
+| `requirement` | Yes | A qualified requirement ID, `<spec-name>/REQ-NNN`, even in a project with one specification. The qualifier is the specification's `spec.name`, not its path. |
+| `tool` | Yes | A key under `[tools]` in `SLCR.toml`. |
+| `criterion` | No | An acceptance criterion ID, `AC-NNN`. It MUST belong to the named requirement. |
+| `description` | No | Text shown in reports. If present, it MUST NOT be empty. |
+| `with` | See below | The tool's settings. |
+
+`with` MUST satisfy the validator schema in the tool's descriptor. It MAY
+be omitted only when that schema accepts an empty object.
+
+Unknown fields MUST NOT appear.
+
+```toml
+# src/views/items/.validators.slcr.toml
+formatVersion = "1"
+
+[[validator]]
+requirement = "todo-api/REQ-002"
+criterion = "AC-004"
+tool = "ast-grep"
+description = "POST handler is defined and registered with the router"
+with = { rule = "rules/post-handler.yml" }
+
+[[validator]]
+requirement = "todo-api/REQ-002"
+tool = "cargo-nextest"
+with = { test = "items::post::creates_item" }
+```
+
+## Identity
+
+Validators have no names. Reports identify each one by its file and its
+1-based position in that file, as in `src/.validators.slcr.toml validator 2`.
+Two identical entries in one file MUST NOT appear.
+
+## Findings reported by `slcr vet`
+
+`slcr vet` checks each entry in this order. When a check fails, checks that
+depend on it are skipped.
+
+| Code | Meaning |
+| --- | --- |
+| (parse error) | The file is malformed, or has an unknown or empty field. |
+| `unknown-spec` | `requirement` names a specification the project doesn't have. |
+| `unknown-requirement` | `requirement` names a requirement the specification doesn't have. |
+| `unknown-criterion` | `criterion` isn't an acceptance criterion of the named requirement. |
+| `tool-not-declared` | `tool` isn't a key under `[tools]`. |
+| `invalid-with` | `with` doesn't satisfy the tool's validator schema. Each schema error is reported separately. |
+| `duplicate-validator` | The entry is identical to an earlier one in the same file. |
+
+## Results
+
+Running a validator produces one of three results:
+
+| Result | Meaning |
+| --- | --- |
+| Green | The tool exited with a code its descriptor lists as passing. |
+| Red | The tool exited with any other code, was killed by a signal, or timed out. |
+| Could not be run | The tool couldn't be started, for example because it isn't on `PATH` or its working directory doesn't exist. `slcr check` fails. |

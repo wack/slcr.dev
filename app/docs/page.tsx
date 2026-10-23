@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Eyebrow, reveal, SliceCorner } from "@/components/decor";
+import { CodeSpans } from "@/components/code-spans";
 import { docHref, getDocSections } from "@/lib/docs";
 
 export const metadata: Metadata = {
@@ -28,10 +29,10 @@ export default function DocsIndexPage() {
                 >
                   <SliceCorner className="size-6 bg-slate-200 group-hover:size-9 group-hover:bg-sprout-500" />
                   <span className="block font-medium text-slate-950 group-hover:text-cobalt-800">
-                    {doc.title}
+                    <CodeSpans text={doc.title} />
                   </span>
                   <span className="mt-1 block text-sm text-slate-600">
-                    {doc.description}
+                    <CodeSpans text={doc.description} />
                   </span>
                 </Link>
               </li>

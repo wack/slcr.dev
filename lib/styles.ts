@@ -3,6 +3,8 @@
 export const proseClasses = [
   "prose prose-slate",
   "prose-headings:font-display prose-headings:font-medium prose-headings:leading-tight prose-headings:tracking-tight",
+  // Breathing room above a heading jumped to from the table of contents.
+  "prose-headings:scroll-mt-8",
   "prose-h2:text-xl prose-h3:text-lg",
   "prose-a:font-medium prose-a:text-cobalt-700 prose-a:decoration-sprout-500 prose-a:decoration-2 prose-a:underline-offset-4 hover:prose-a:text-cobalt-900",
   "prose-strong:text-slate-900",

@@ -1,5 +1,5 @@
 ---
-title: Links and Satisfaction
+title: Links and satisfaction
 description: How requirements connect to each other, and how those links decide whether each requirement is satisfied.
 order: 21
 ---
@@ -117,9 +117,9 @@ A requirement that others refine states how to combine them in its
 
 If every refiner of an `AND` is a `MAY`, all of them are left out and nothing
 remains to evaluate. The parent is then vacuously satisfied: no counted
-refiner is unsatisfied, because there are none. `check` reports a warning in
-this case, since a parent with no counted refiners is usually a sign that the
-spec's structure needs attention.
+refiner is unsatisfied, because there are none. `slcr vet` reports this as a
+`vacuous-and` warning. Using `OR`, or giving at least one refiner a `MUST` or
+`SHOULD` modality, gives the parent something to evaluate.
 
 If a requirement has its own validators as well as refiners, both must hold:
 the result of its validators is combined with the result of its refiners

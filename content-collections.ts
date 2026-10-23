@@ -2,10 +2,12 @@ import { defineCollection, defineConfig } from "@content-collections/core";
 import { compileMDX } from "@content-collections/mdx";
 import remarkGfm from "remark-gfm";
 import { z } from "zod";
+import { extractToc, remarkHeadingIds } from "./lib/headings";
 
 // GitHub-flavored Markdown (tables, autolinks, strikethrough, task lists) for
 // every collection.
-const mdxOptions = { remarkPlugins: [remarkGfm] };
+// Headings get GitHub-style IDs so they can be linked to (see lib/headings.ts).
+const mdxOptions = { remarkPlugins: [remarkGfm, remarkHeadingIds] };
 
 const docs = defineCollection({
   name: "docs",
@@ -26,6 +28,8 @@ const docs = defineCollection({
       mdx,
       // `content/docs/guides/intro.mdx` -> ["guides", "intro"]
       slug: document._meta.path.split("/"),
+      // The ## and ### headings, for the page's table of contents.
+      toc: extractToc(document.content),
     };
   },
 });

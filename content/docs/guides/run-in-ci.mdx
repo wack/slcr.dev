@@ -1,0 +1,96 @@
+---
+title: Run SLCR in CI
+description: Check a project's specifications, rendering, and validators on every change.
+order: 33
+---
+
+This guide sets up CI to fail when a specification is malformed, when the
+committed rendering is out of date, or when a requirement isn't satisfied.
+
+## The commands
+
+Run these from anywhere in the project:
+
+```bash
+slcr tools install                    # install pinned descriptors
+slcr vet --deny-warnings              # specs, validators, and manifest are well formed
+slcr render --expect-no-diff          # the committed SPEC.md matches the spec
+slcr check --offline --deny-warnings  # every requirement is satisfied
+```
+
+- Drop `slcr render --expect-no-diff` if the project doesn't commit its
+  rendered Markdown.
+- Drop `--deny-warnings` if warnings, such as unsatisfied `SHOULD`
+  requirements, shouldn't fail the build.
+- `slcr check` installs missing descriptors itself. Running
+  `slcr tools install` first, then `check --offline`, keeps network failures
+  separate from check failures.
+
+Each command exits `1` on failure, which fails the CI step.
+
+## GitHub Actions
+
+```yaml
+# .github/workflows/slcr.yml
+name: SLCR
+on: [push, pull_request]
+
+jobs:
+  slcr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install slcr
+        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/wack/slcr/releases/latest/download/slcr-installer.sh | sh
+
+      # Install every program your validators run. This example uses cargo-nextest.
+      - name: Install validator tools
+        run: cargo install cargo-nextest --locked
+
+      - name: Install descriptors
+        run: slcr tools install
+
+      - name: Specs are well formed
+        run: slcr vet --deny-warnings
+
+      - name: SPEC.md is up to date
+        if: ${{ !cancelled() }}
+        run: slcr render --expect-no-diff
+
+      - name: Requirements are satisfied
+        if: ${{ !cancelled() }}
+        run: slcr check --offline --deny-warnings
+```
+
+The `if: ${{ !cancelled() }}` conditions run each check even when an earlier
+one fails, so one failure doesn't hide another.
+
+## Install the programs validators run
+
+`slcr` runs the programs named in each tool descriptor, looked up on `PATH`.
+CI must install them, the same as for running tests. If one is missing,
+`slcr check` reports the validator as "could not be run" and fails.
+
+## Optional: cache the descriptor store
+
+Descriptors are installed under `~/.local/share/slcr` on Linux, or
+`$XDG_DATA_HOME/slcr` if that's set. Caching this directory avoids fetching
+descriptors on each run:
+
+```yaml
+      - uses: actions/cache@v4
+        with:
+          path: ~/.local/share/slcr
+          key: slcr-descriptors-${{ hashFiles('SLCR.toml') }}
+```
+
+Add it before the "Install descriptors" step. A stale cache is safe:
+descriptors are stored by pin, and `slcr` checks each one against its pin
+before use.
+
+## Reproduce a failure locally
+
+Run the failing command locally, with the same options, before changing
+anything. See [Troubleshoot `slcr check`](/docs/guides/troubleshoot-slcr-check) for
+what each failure means.
