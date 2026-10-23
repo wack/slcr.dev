@@ -1,0 +1,154 @@
+---
+title: Specifications
+description: How SLCR stores requirements as a graph, the four kinds of node, permanent IDs, and how specs make up a project.
+order: 20
+---
+
+A specification, or spec, is a project's requirements stored as structured
+data instead of prose. Because the structure is explicit, tools can work with
+a spec in ways they can't with a document: give an agent one requirement and
+its context, check every requirement against the code, or answer questions
+about the spec with a query.
+
+The examples in this section come from one small spec, `todo-api`, which
+describes a REST API with one resource.
+
+## A spec is a graph
+
+A spec is a tree of nodes, plus links that cross the tree. The tree gives the
+document its shape: sections hold requirements, and requirements hold their
+acceptance criteria. The links record how requirements relate to each other,
+and are covered in [Links and Satisfaction](/docs/concepts/links-and-satisfaction).
+
+Each spec is one file, written in YAML, JSON, or TOML. All three formats
+describe the same graph, so every command behaves the same regardless of
+which one a project uses.
+
+```yaml
+$schema: https://slcr.dev/reference/schemas/spec/v1.schema.json
+formatVersion: "1"
+spec:
+  name: todo-api
+root:
+  kind: section
+  id: SEC-001
+  title: TodoList API
+  body: A REST web application in MVC layout with one resource.
+  children:
+    - kind: section
+      id: SEC-004
+      title: Models
+      body: Persistence assumptions.
+      children:
+        - kind: requirement
+          id: REQ-007
+          title: Table todo_list_item exists
+          body: There MUST be a table `todo_list_item` with columns `title` (string) and `done` (bool).
+          modality: MUST
+          usesTerm: [TERM-001]
+glossary:
+  kind: section
+  id: SEC-006
+  title: Glossary
+  terms:
+    - kind: term
+      id: TERM-001
+      title: TodoListItem
+      definition: A single item on a to-do list, with a title and a done flag.
+```
+
+Every spec has a root section that holds everything else, and a glossary
+section that holds the terms.
+
+## Four kinds of node
+
+| Node | ID prefix | Purpose |
+| --- | --- | --- |
+| Section | `SEC-` | Structure and background |
+| Requirement | `REQ-` | One statement the code must satisfy |
+| Acceptance criterion | `AC-` | What "done" means for one requirement |
+| Term | `TERM-` | One glossary entry |
+
+Every node has a `kind`, an `id`, and a one-line `title`. Prose fields are
+Markdown.
+
+**Sections** organize the spec the way a reader looks for things: by
+component, layer, or command. A section's `body` holds background such as
+motivation, assumptions, or context. Sections are never satisfied or
+unsatisfied. Their purpose is to give the requirements under them a place in
+the document and shared background, which every slice beneath the section
+inherits.
+
+**Requirements** are the statements the code must satisfy. A requirement's
+`body` states one testable thing using an
+[RFC 2119](https://www.rfc-editor.org/rfc/rfc2119) keyword in capitals, and
+its `modality` field records that keyword: `MUST`, `MUST NOT`, `SHOULD`,
+`SHOULD NOT`, or `MAY`. Reasoning goes in a separate `rationale` field, which
+keeps the statement short. A requirement can hold narrower requirements
+beneath it.
+
+**Acceptance criteria** belong to one requirement. Each describes what "done"
+looks like, concretely enough that someone could write a check for it.
+Criteria connect requirements to the validators that test them, as described
+in [Validators](/docs/concepts/validators).
+
+**Terms** define the spec's domain vocabulary once. A section or requirement
+that uses a term links to it with `usesTerm`, so many requirements can share
+one definition without repeating it. Terms are never linked automatically
+from prose.
+
+## IDs are permanent
+
+An ID is a prefix for the node's kind followed by a number: `SEC-001`,
+`REQ-042`, `AC-007`, `TERM-003`. An ID never changes and is never reused.
+Validators in other files refer to requirements and criteria by ID. If
+`REQ-004` were renumbered, or a deleted `REQ-004` were reused for something
+else, those validators would silently start checking the wrong thing. Moving
+a node elsewhere in the tree doesn't change its ID.
+
+Outside its spec, an ID is qualified with the spec's name, as in
+`todo-api/REQ-002`. Qualified IDs let one project hold several specs, for
+example one per service, or a feature spec kept separate until it has been
+reviewed and implemented. Because renaming a spec changes every qualified
+ID, a spec's name is effectively permanent too.
+
+## The spec is the source, Markdown is output
+
+The spec file is written for tools. People read the Markdown document that
+`slcr render` generates from it. The rendering looks like a conventional
+requirements document: numbered headings, each requirement's body,
+rationale, refinements, dependencies, and acceptance criteria, and a
+glossary at the end. Cross-references are hyperlinks, and IDs are kept out of
+the visible text.
+
+The rendering is generated output, like a compiled artifact. Edits made to
+the Markdown would not carry back to the spec, so changes are made to the
+spec and the document is rendered again. Projects can either commit the
+rendered document or generate it on demand. Projects that commit it can use
+`slcr render --expect-no-diff` in CI to confirm it matches the spec.
+
+## Querying a spec
+
+Because a spec is a graph, it can also be queried. `slcr query` runs
+read-only GQL, a standard graph query language, over a spec. Nodes are
+labeled `Section`, `Requirement`, `AcceptanceCriterion`, and `Term`:
+
+```bash
+slcr query "MATCH (r:Requirement) WHERE r.modality = 'MUST' RETURN r.id, r.title"
+```
+
+## Projects
+
+A project is a directory tree with an `SLCR.toml` manifest at its root. The
+manifest is the project's configuration: it lists the project's specs as
+file patterns and declares the tools that validators may run (see
+[Validators](/docs/concepts/validators)). `slcr` finds the project root by
+searching upward from the current directory, so commands work from anywhere
+in the project.
+
+## Format versions
+
+Every SLCR file, whether a spec, validator file, manifest, or tool
+descriptor, declares the version of the format it uses. Today that is
+`formatVersion = "1"`. A change that would make existing files invalid
+requires a new format version, so every file states which rules it follows.
