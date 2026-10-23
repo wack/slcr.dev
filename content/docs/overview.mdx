@@ -1,0 +1,204 @@
+---
+title: Overview
+description: What SLCR is, the problems it solves, and how specifications, slices, and validators fit together.
+order: 1
+---
+
+**SLCR** (Sliceable, Linked, Checkable Requirements) is an open standard for
+agent-native software requirements. Software specs are written for humans,
+but increasingly they're being consumed by agents. Instead of feeding an agent
+the entire document, which can bloat context and introduce subtle errors,
+SLCR lets you provide your agent with a slice of the document instead of
+everything.
+
+Specs should be optimized for humans and agents alike. SLCR provides an agent-native
+format for AI agents without sacrificing human readability. SLCR achieves this by
+storeing a project's requirements as a graph instead of a text blob. An
+agent reads a _slice_ of the graph: one requirement plus the context it needs
+to implement it, and nothing else. People read Markdown rendered from the same
+graph. Validators that live beside your code check each requirement, so "does
+the code do what the spec says?" becomes a command you can run in CI.
+
+SLCR has three parts:
+
+- **The format.** Specifications, validator files, the `SLCR.toml` project
+  manifest, and tool descriptors. Every file declares the format version it
+  uses, and the format is open, so any tool can read and write these files.
+- **`slcr`**, the reference command-line tool. It creates, vets, slices,
+  renders, queries, and checks SLCR projects.
+- **An agent skill** that teaches coding agents when and how to use SLCR.
+
+## Why SLCR
+
+As agents become more and more central to the engineering process, humans rely
+increasingly on a system spec and requirements to keep them sane. Coding agents
+build tickets from the spec, or use it to verify the status of the
+implementation effort.
+
+Two problems get in the way on long-running work:
+
+- **Context rot.** Give an agent a long requirements document and it will mix
+  up details or drop instructions. The more prose up front, the worse it gets.
+- **Compounding drift.** A small chance of misreading the spec when drafting a ticket
+  compounds errors as the requirement moves from spec to ticking, ticking to implementation,
+  and implementation to test and release . By the end, something has usually
+  drifted, and there's no cheap way to restart from the point of deviation.
+
+SLCR solves the first problem by giving agents slices instead of whole
+documents, and the second by tying every requirement to validators that pass
+or fail. The goal is to reduce how often someone has to send an agent back
+to fix its work.
+
+## How it works
+
+### Specifications are graphs
+
+A specification is one file in YAML, JSON, or TOML. It holds a tree of four
+kinds of node:
+
+| Node | ID | What it is |
+| --- | --- | --- |
+| Section | `SEC-001` | Document structure and background prose |
+| Requirement | `REQ-001` | One testable statement |
+| Acceptance criterion | `AC-001` | What "done" looks like for one requirement |
+| Term | `TERM-001` | A glossary entry |
+
+IDs never change. Validators elsewhere in the repository refer to them, so
+an ID is never renumbered or reused.
+
+Each requirement has a modality from
+[RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): `MUST`, `MUST NOT`,
+`SHOULD`, `SHOULD NOT`, or `MAY`. The modality sets how much a failure
+matters. Requirements are connected by edges:
+
+- **`refines`**: this requirement helps satisfy another. A parent combines
+  its refiners with `AND`, `OR`, or `XOR`, so the difference between "OAuth
+  tokens _or_ API keys" and "OAuth tokens _and_ API keys" is stored in the
+  data, not left to how the sentence is worded. These boolean logic operators
+  respected when determining whether a requirement is satisfied.
+- **`dependsOn`**: an implementer needs another requirement or Section to
+  understand or implement this one.
+- **`usesTerm`**: this node uses a glossary term.
+
+Nesting only decides where a node renders. Only `refines` edges count
+toward satisfaction.
+
+### Slices give an agent only its task
+
+`slcr slice REQ-005` prints what an agent needs to implement `REQ-005`:
+
+- the requirement, its refinements, and its acceptance criteria
+- the background from the Sections and requirements it sits under
+- the requirements it depends on, with their own background
+- the glossary terms it uses
+
+A slice leaves out sibling requirements. An agent building a controller gets
+the endpoint shapes and table columns it depends on, but not the
+authentication rules someone else is implementing. Reducing context also reduces
+the change of agent confusion, and reduces scope creep within a session.
+
+### Validators assay requirements
+
+A validator is an entry in a `.validators.slcr.toml` file (or `.yaml`, `.yml`,
+or `.json`) in the directory of the code it checks, so it moves with that
+code. It names the requirement and, optionally, the acceptance criterion it
+validates, and the tool that validates it:
+
+```toml
+# tests/.validators.slcr.toml
+formatVersion = "1"
+
+[[validator]]
+requirement = "todo-api/REQ-001"
+criterion = "AC-001"
+tool = "cargo-nextest"
+with = { test = "items::post_returns_the_created_item" }
+```
+
+SLCR has no built-in tools. A project declares the programs its validators
+run, such as a test runner, an AST matcher like `ast-grep`, or a script. Each
+tool is described by a small TOML descriptor that says how to invoke it and
+which exit codes mean a pass. Descriptors are declared in `SLCR.toml` and
+pinned by a BLAKE3 hash, so a validator never runs a descriptor that has
+changed without anyone noticing.
+
+The dependency runs one way: validators name requirements, and requirements
+never name validators. That keeps implementation detail out of the spec that
+stakeholders read.
+
+### `slcr check` reports what's satisfied
+
+`slcr check` runs every validator and evaluates each requirement from the
+leaves up, following `refines` edges:
+
+```console
+$ slcr check
+tests/.validators.slcr.toml validator 1 (todo-api/REQ-001 AC-001, cargo-nextest): green
+todo-api: 1 satisfied, 0 unsatisfied, 1 unknown (1 coverage gap)
+```
+
+Every requirement ends up **satisfied**, **unsatisfied**, or **unknown**.
+Unknown means no validator covers it yet. That's a coverage gap to close, not
+a pass. Modality decides what an unsatisfied requirement does to the run:
+
+| Modality | When unsatisfied |
+| --- | --- |
+| `MUST`, `MUST NOT` | A violation, which fails `check` |
+| `SHOULD`, `SHOULD NOT` | A warning, which fails only with `--deny-warnings` |
+| `MAY` | Informational, which never fails |
+
+### People read rendered Markdown
+
+Running `slcr render` produces a human-oriented Markdown document, looking exactly
+like a normal requirements document. Agents edit the spec file directly, and the Markdown
+file can be cheaply rerendered from the spec file. The Markdown is output, like a
+compiled artifact, pinning the desired behavior at the current moment.
+
+## A typical workflow (Red, Green, Refactor)
+
+An agent implementing a requirement:
+
+1. Reads the slice with `slcr slice REQ-ID`.
+2. Writes a validator for it and watches it fail.
+3. Implements the requirement until the validator passes.
+4. Runs `slcr check` to confirm the requirement is satisfied.
+
+In CI, three commands keep the spec, the code, and the rendering in step:
+
+```bash
+slcr vet --deny-warnings        # specs, validators, and manifest are well formed
+slcr check --deny-warnings      # every validator passes
+slcr render --expect-no-diff    # the committed SPEC.md is up to date
+```
+
+## The CLI at a glance
+
+| Command | What it does |
+| --- | --- |
+| `slcr init` | Create a specification, and `SLCR.toml` if the project doesn't have one |
+| `slcr vet` | Check that specs, validator files, and the manifest are well formed, without running anything |
+| `slcr slice` | Print the context an agent needs to implement one requirement |
+| `slcr check` | Run every validator and report which requirements are satisfied |
+| `slcr render` | Render a specification as Markdown |
+| `slcr query` | Run a read-only GQL query over a specification |
+| `slcr tools` | Add, update, install, list, and remove the tools validators run |
+
+**Vet** checks whether the spec file itself is well-formed, while **check**
+runs the validation suite. `vet`, `check`, and `query` can also emit JSON
+for scripts and agents.
+
+## Status
+
+SLCR is pre-release, and the formats may still change before 1.0. Today,
+validators report pass or fail by exit code, and every `slcr check` reruns
+every validator. Structured validator results and result caching are planned.
+
+SLCR specifies itself: the `slcr` repository keeps the CLI's requirements in
+an SLCR spec, and `slcr check` in that repository checks `slcr`.
+
+## Where to go next
+
+- Install `slcr` with [Installation](/docs/getting-started/installation).
+- Write your first spec with the [Quickstart](/docs/getting-started/quickstart).
+- Learn the model in depth in [Core Concepts](/docs/concepts/core-concepts).
+- Look up exact rules in the [Specification](/docs/reference/specification).
