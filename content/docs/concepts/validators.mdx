@@ -4,26 +4,26 @@ description: How acceptance criteria, validators, and tools turn requirements in
 order: 23
 ---
 
-A requirement is a statement about the desired state of the source code.
-Validators are how SLCR tests that statement.
-Each validator runs a tool, such as a test runner, a linter, or a
-script, and reports green or red. `slcr check` runs them all and combines
-their results through the spec's
-[links](/docs/concepts/links-and-satisfaction) into a status for every
-requirement.
+A requirement is a statement about how the software should behave.
+Validators are how SLCR tests that statement. Each validator runs a tool,
+such as a test runner, a linter, or a script, and reports green (pass) or red
+(fail). `slcr check` runs every validator and combines the results through
+the spec's [links](/docs/concepts/links-and-satisfaction) into a status for
+each requirement. This is how SLCR detects drift: a failing validator points
+to the specific requirement the code no longer meets.
 
-The chain from a requirement to a result looks like this:
+The path from a requirement to a result has five parts:
 
 1. A **requirement** states what must hold.
-2. Its **acceptance criteria** say what "done" looks like.
-3. **Validators** name a criterion and the tool that proves it.
-4. A **tool descriptor** says how to run that tool.
-5. `slcr check` runs the tools and reports what's satisfied.
+2. Its **acceptance criteria** describe what "done" looks like.
+3. **Validators** name a requirement or criterion and the tool that checks it.
+4. A **tool descriptor** describes how to run that tool.
+5. `slcr check` runs the tools and reports which requirements are satisfied.
 
 ## Acceptance criteria
 
-An acceptance criterion describes, for one requirement, what someone could
-check to know the requirement holds:
+An acceptance criterion describes, for one requirement, something that could
+be checked to show the requirement holds:
 
 ```yaml
 acceptanceCriteria:
@@ -36,12 +36,12 @@ acceptanceCriteria:
       migration source is sufficient.
 ```
 
-Criteria are written before the code exists, so they name no files,
-functions, or code patterns. They describe behavior, and leave how it's
-checked to validators. A criterion asserts nothing on its own: the
-requirement is the claim, and validators prove it. A requirement doesn't need
-criteria to be valid, but criteria make it much easier to see what a
-validator should check.
+Criteria are usually written before the code exists, so they describe
+behavior rather than naming files, functions, or code patterns. How the
+behavior is checked is left to validators. A criterion asserts nothing on its
+own: the requirement is the claim, and validators provide the evidence.
+Criteria are optional, but they make it clearer what a validator should
+check.
 
 ## Validators
 
@@ -65,45 +65,44 @@ tool = "cargo-nextest"
 with = { test = "items::post::creates_item" }
 ```
 
-Each validator names:
-
-- the **requirement** it checks, qualified with the spec's name, even in a
-  project with only one spec
-- optionally, the **criterion** it proves, which must belong to that
-  requirement
-- the **tool** that runs the check, which must be declared in `SLCR.toml`
-- the tool's settings, under **`with`**
-
-Validator files are named `.validators.slcr.toml`, `.yaml`, `.yml`, or
-`.json`, with at most one per directory. `slcr` finds them by walking the
-project and skips git-ignored paths. Because a validator file sits beside the
-code it checks, it moves with that code.
+Each validator names the requirement it checks (as a qualified ID),
+optionally the criterion it tests, the tool that runs the check, and the
+tool's settings under `with`. A directory holds at most one validator file.
+Because the file sits beside the code it checks, it moves when that code
+moves.
 
 ### The dependency runs one way
 
 Validators name requirements, and requirements never name validators. The
-spec says what must be true and stays readable for anyone, including people
-who never look at the code. All the implementation detail, such as test
-names, file paths, and tool settings, lives with the code. You can rewrite
-the tests without touching the spec, and edit the spec without knowing how
-it's tested.
+spec states what must be true and stays readable for people who never look at
+the code. Implementation detail, such as test names, file paths, and tool
+settings, lives with the code. Tests can be rewritten without changing the
+spec, and the spec can be edited without knowing how it's tested.
 
 ### Several validators per criterion
 
-Turning an acceptance criterion into validators is called materializing it.
-One criterion may need several validators. For example, the same
+Turning an acceptance criterion into validators is called **materializing**
+it. One criterion may need several validators. For example, the same
 authentication check might need to run against handlers in two directories.
-A requirement's own validators are ANDed: every one must pass for the
-requirement to be satisfied.
+A requirement's own validators combine with `AND`: every one must pass for
+the requirement to be satisfied.
 
-A validator only proves something if it can fail. The usual loop is
-red-green: write the validator, watch it fail before the code exists, then
-implement until it passes.
+A validator only provides evidence if it can fail. This is why the usual
+workflow is red-green: write the validator, see it fail before the code
+exists, then implement until it passes.
 
 ## Tools and descriptors
 
 SLCR has no built-in tools. Each project declares the programs its
-validators may run, and a **tool descriptor** says how to run each one:
+validators may run in `SLCR.toml`, and a **tool descriptor** describes how to
+run each one. A descriptor is a small, declarative TOML file. It is never
+executed itself. It specifies:
+
+- a schema for the validator's `with` settings, so a mistake in a validator
+  is caught before anything runs
+- the command to run, with placeholders filled from the validator
+- the working directory, and optionally an environment and timeout
+- which exit codes count as a pass
 
 ```toml
 formatVersion = "1"
@@ -124,62 +123,40 @@ cwd = { nearest = "Cargo.toml" }
 pass = [0]
 ```
 
-A descriptor is a small, declarative TOML file. It's never executed itself
-and never run through a shell. It gives:
-
-- the **schema** that every validator's `with` must satisfy, so a typo in a
-  validator is caught before anything runs
-- the **command**, as an argument list. Placeholders like `{with.test}` are
-  filled from the validator.
-- the **working directory**: the project root, the validator's directory, or
-  the nearest directory containing a given file. It can also set an
-  environment and a timeout.
-- the **exit codes** that count as a pass. Any other exit code, a signal, or
-  a timeout is red.
-
-A descriptor can wrap anything, including a short script committed to the
-repository, so validators can check whatever a program can check: tests,
-code structure, configuration, or generated files.
+A descriptor can wrap any program, including a short script committed to the
+repository, so validators can check anything a program can check: tests,
+code structure, configuration, or generated files. In the current version, a
+validator's result comes only from the tool's exit code.
 
 ### Pins
 
-`slcr tools add` declares a tool in `SLCR.toml`, recording where its
-descriptor came from and a **pin**: the BLAKE3 hash of the descriptor's
-exact bytes. A descriptor's source is either a path inside the project or an
-`https://` URL. `slcr` refuses to use a descriptor whose bytes don't match
-its pin, so the commands that run on a machine are always the ones reviewed
-in the manifest's history. Pins are written only by `slcr tools`, never by
-hand.
-
-Installed descriptors live in a store in `slcr`'s data directory, filed by
-pin and shared by every project on the machine. On a fresh clone,
-`slcr tools install` fills the store with exactly what the manifest pins.
-After that, vetting and checking need no network.
+When a tool is declared, `SLCR.toml` records where its descriptor came from
+and a **pin**: a cryptographic hash (BLAKE3) of the descriptor's exact
+contents. `slcr` refuses to use a descriptor whose contents don't match its
+pin. This means the commands that run on any machine are exactly the ones
+recorded, and reviewed, in the project's history.
 
 ## Vet and check
 
-The two words have fixed meanings in SLCR:
+`vet` and `check` answer two different questions:
 
 - **`slcr vet`** asks whether the project is well formed: specs, validator
   files, the manifest, and installed descriptors. It finds broken links,
-  cycles, duplicate IDs, and validators whose `with` doesn't match their
-  tool's schema. It runs nothing and never uses the network.
-- **`slcr check`** asks whether the validators pass. It installs any missing
-  descriptors (unless `--offline`), vets the project, and runs nothing if
-  vetting fails. Then it runs every validator in parallel and reports each
-  requirement's status.
+  cycles, duplicate IDs, and validators whose settings don't match their
+  tool's schema. It runs nothing.
+- **`slcr check`** asks whether the validators pass. It vets the project
+  first and runs nothing if vetting fails. It then runs every validator and
+  reports each requirement's status. In the current version, every run of
+  `check` reruns every validator.
 
-A validator's result is one of:
+Each validator produces one of three results:
 
-| Result | Means | What to do |
-| --- | --- | --- |
-| Green | The tool ran and passed | Nothing |
-| Red | The tool ran and failed | Fix the code, or fix the validator if it's wrong. Don't loosen the requirement to get green. |
-| Could not be run | The tool couldn't start, for example because it's missing from `PATH`. It proves nothing either way, so `check` fails. | Fix the environment, not the code |
+| Result | Meaning |
+| --- | --- |
+| Green | The tool ran and passed. |
+| Red | The tool ran and failed. Either the code or the validator needs to change. |
+| Could not be run | The tool couldn't start, for example because it isn't installed. This proves nothing either way, so `check` fails. |
 
-`slcr check` prints the end of a red validator's output under its status
-line, and `--format json` includes all of it.
-
-Running `slcr check` means running the commands a project's descriptors
-declare, just as running a test suite means running its tests. Only check
-repositories you trust.
+Running `slcr check` runs the commands a project's descriptors declare, the
+same way running a test suite runs its tests. It carries the same trust
+considerations as running any project's tests.

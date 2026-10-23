@@ -1,30 +1,28 @@
 ---
 title: Specifications
-description: How SLCR stores requirements as a graph, the four kinds of node, stable IDs, and how specs make up a project.
+description: How SLCR stores requirements as a graph, the four kinds of node, permanent IDs, and how specs make up a project.
 order: 20
 ---
 
-A specification is a project's requirements stored as data instead of prose.
-Because the structure is explicit, tools can do things with a spec that they
-can't do with a document: hand an agent one requirement and its context,
-check every requirement against the code, and answer questions about the
-spec with a query.
+A specification, or spec, is a project's requirements stored as structured
+data instead of prose. Because the structure is explicit, tools can work with
+a spec in ways they can't with a document: give an agent one requirement and
+its context, check every requirement against the code, or answer questions
+about the spec with a query.
 
-The examples on these pages all come from one small spec, `todo-api`, which
+The examples in this section come from one small spec, `todo-api`, which
 describes a REST API with one resource.
 
 ## A spec is a graph
 
-A spec is a tree of nodes, plus edges that cross the tree. The tree gives
-the document its shape: Sections hold Requirements, and Requirements hold
-their acceptance criteria. The edges say how requirements relate to each
-other, and are covered in [Links and Satisfaction](/docs/concepts/links-and-satisfaction).
+A spec is a tree of nodes, plus links that cross the tree. The tree gives the
+document its shape: sections hold requirements, and requirements hold their
+acceptance criteria. The links record how requirements relate to each other,
+and are covered in [Links and Satisfaction](/docs/concepts/links-and-satisfaction).
 
-Each spec is one file, written in YAML, JSON, or TOML. The file's extension
-picks the format: `.yaml` or `.yml`, `.json`, or `.toml`. All three describe
-the same graph, so every command behaves the same whichever you choose. The
-default file name is `SPEC.slcr.toml`, and `slcr` commands read it when you don't
-name a file explicitly.
+Each spec is one file, written in YAML, JSON, or TOML. All three formats
+describe the same graph, so every command behaves the same regardless of
+which one a project uses.
 
 ```yaml
 $schema: https://slcr.dev/reference/schemas/spec/v1.schema.json
@@ -59,92 +57,81 @@ glossary:
       definition: A single item on a to-do list, with a title and a done flag.
 ```
 
-Every spec has a root Section that holds everything else, and a Glossary
-Section that holds the terms. `slcr init` writes both for you.
+Every spec has a root section that holds everything else, and a glossary
+section that holds the terms.
 
 ## Four kinds of node
 
-| Node | ID prefix | What it's for |
+| Node | ID prefix | Purpose |
 | --- | --- | --- |
 | Section | `SEC-` | Structure and background |
 | Requirement | `REQ-` | One statement the code must satisfy |
-| Acceptance criterion | `AC-` | What "done" looks like for one requirement |
+| Acceptance criterion | `AC-` | What "done" means for one requirement |
 | Term | `TERM-` | One glossary entry |
 
 Every node has a `kind`, an `id`, and a one-line `title`. Prose fields are
 Markdown.
 
-**Sections** organize the spec the way a reader would look for things: by
-component, layer, or command. A Section's `body` holds background, such as
+**Sections** organize the spec the way a reader looks for things: by
+component, layer, or command. A section's `body` holds background such as
 motivation, assumptions, or context. Sections are never satisfied or
-unsatisfied. They exist to give the requirements under them a place and appropriate
-context, and every slice beneath a Section inherits its body. Sections are how you
-link background information to requirements.
+unsatisfied. Their purpose is to give the requirements under them a place in
+the document and shared background, which every slice beneath the section
+inherits.
 
 **Requirements** are the statements the code must satisfy. A requirement's
-`body` states one testable thing, using an
-[RFC 2119](https://www.rfc-editor.org/rfc/rfc2119) keyword in capitals.
-Its `modality` field repeats that keyword: `MUST`, `MUST NOT`, `SHOULD`,
-`SHOULD NOT`, or `MAY`. A requirement's reasoning goes in a separate
-`rationale` field, so the statement stays short. Requirements can hold other
-requirements, allowing for a parent-child relationship between a broad parent
-requirement and narrower, more specific child requirements, when it's convenient.
+`body` states one testable thing using an
+[RFC 2119](https://www.rfc-editor.org/rfc/rfc2119) keyword in capitals, and
+its `modality` field records that keyword: `MUST`, `MUST NOT`, `SHOULD`,
+`SHOULD NOT`, or `MAY`. Reasoning goes in a separate `rationale` field, which
+keeps the statement short. A requirement can hold narrower requirements
+beneath it.
 
-**Acceptance criteria** belong to one requirement and describe what "done"
-looks like for it, concretely enough that someone could write a check. They
-connect a requirement to the validators that prove it, as described in
-[Validators](/docs/concepts/validators).
+**Acceptance criteria** belong to one requirement. Each describes what "done"
+looks like, concretely enough that someone could write a check for it.
+Criteria connect requirements to the validators that test them, as described
+in [Validators](/docs/concepts/validators).
 
-**Terms** define the spec's domain words once. A Section or Requirement that
-uses a term links to it with `usesTerm`. Prose is never linked to terms
-automatically. Linking terms this way allows multiple requirements to link to
-the same core definition without having to duplicate text across the document.
+**Terms** define the spec's domain vocabulary once. A section or requirement
+that uses a term links to it with `usesTerm`, so many requirements can share
+one definition without repeating it. Terms are never linked automatically
+from prose.
 
 ## IDs are permanent
 
-Each node's ID is a prefix that matches its kind, followed by a number:
-`SEC-001`, `REQ-042`, `AC-007`, `TERM-003`. Numbers count up across the whole
-spec, separately for each kind, so acceptance criteria are numbered `AC-001`,
-`AC-002`, and so on across all requirements, not per requirement.
+An ID is a prefix for the node's kind followed by a number: `SEC-001`,
+`REQ-042`, `AC-007`, `TERM-003`. An ID never changes and is never reused.
+Validators in other files refer to requirements and criteria by ID. If
+`REQ-004` were renumbered, or a deleted `REQ-004` were reused for something
+else, those validators would silently start checking the wrong thing. Moving
+a node elsewhere in the tree doesn't change its ID.
 
-An ID never changes and is never reused. Validators in other files point at
-requirements and criteria by ID, so if `REQ-004` were renumbered, or a
-deleted `REQ-004` were reused for something else, those validators would
-quietly start checking the wrong thing. Moving a node to a different place in
-the tree doesn't change its ID. New nodes take the next free number of their
-kind.
-
-Outside the spec, an ID is qualified with the spec's name: `todo-api/REQ-002`.
-The name is set in the spec's `spec.name` field and is lowercase words
-separated by dashes. Renaming a spec changes every qualified ID, so treat the
-name as permanent too. IDs are qualified this way to allow projects to contain multiple
-specs. It's not uncommon to spec out individual features in their own requirements
-documents, and then unify each feature document with the core document once it's been
-through review and implementation. By supporting spec namespaces, we allow multiple
-requirements docs to coexist within a given project.
+Outside its spec, an ID is qualified with the spec's name, as in
+`todo-api/REQ-002`. Qualified IDs let one project hold several specs, for
+example one per service, or a feature spec kept separate until it has been
+reviewed and implemented. Because renaming a spec changes every qualified
+ID, a spec's name is effectively permanent too.
 
 ## The spec is the source, Markdown is output
 
-People don't read the spec file, since it's written in TOML, JSON, or YAML.
-Instead, they read `SPEC.md`, which is generated by `slcr render`.
-The rendering looks like an ordinary requirements
-document: numbered headings in document order, each requirement's body,
+The spec file is written for tools. People read the Markdown document that
+`slcr render` generates from it. The rendering looks like a conventional
+requirements document: numbered headings, each requirement's body,
 rationale, refinements, dependencies, and acceptance criteria, and a
-Glossary at the end. Cross-references are hyperlinks, and IDs are kept out of
+glossary at the end. Cross-references are hyperlinks, and IDs are kept out of
 the visible text.
 
-The rendering is generated, like a compiled artifact. It's a best practice to never
-edit the Markdown document, since that would introduce drift between the human-facing
-artifact and the spec. Instead, change the spec and render again.
-Users can choose either to commit `SPEC.md` or to add it to `.gitignore` and generate it only
-when needed, to ensure freshness; it's a project choice SLCR leaves to you and your team.
-Having said that, if your project commits `SPEC.md`, then it's recommended that you run
-`slcr render --expect-no-diff` in CI, which fails when the committed
-rendering doesn't match the spec, ensuring that the committed artifact doesn't drift from the spec.
+The rendering is generated output, like a compiled artifact. Edits made to
+the Markdown would not carry back to the spec, so changes are made to the
+spec and the document is rendered again. Projects can either commit the
+rendered document or generate it on demand. Projects that commit it can use
+`slcr render --expect-no-diff` in CI to confirm it matches the spec.
+
+## Querying a spec
 
 Because a spec is a graph, it can also be queried. `slcr query` runs
-read-only GQL over a spec, where nodes are labeled `Section`, `Requirement`,
-`AcceptanceCriterion`, and `Term`:
+read-only GQL, a standard graph query language, over a spec. Nodes are
+labeled `Section`, `Requirement`, `AcceptanceCriterion`, and `Term`:
 
 ```bash
 slcr query "MATCH (r:Requirement) WHERE r.modality = 'MUST' RETURN r.id, r.title"
@@ -152,30 +139,16 @@ slcr query "MATCH (r:Requirement) WHERE r.modality = 'MUST' RETURN r.id, r.title
 
 ## Projects
 
-A project is a directory tree with an `SLCR.toml` manifest at its root.
-This manifest functions as the configuration file for the `slcr` CLI.
-`slcr` finds the project root by walking up from the working directory to the
-nearest `SLCR.toml`, so commands work from anywhere inside the directory tree.
-
-```toml
-formatVersion = "1"
-specs = ["SPEC.slcr.toml", "services/**/*.slcr.yaml"]
-
-[tools.cargo-insta]
-version = "1.0.0"
-source = { path = "tools/cargo-insta.toml" }
-pin = "blake3:5938a1a1f330618c38a831ff3651a55303f1e4f1460a3e91b02f4447df9d2414"
-```
-
-`specs` lists the project's specs as globs relative to the root. A project
-can hold several specs, such as one per service, as long as their names are
-unique. The `[tools]` table declares the programs that validators may run,
-which [Validators](/docs/concepts/validators) explains.
+A project is a directory tree with an `SLCR.toml` manifest at its root. The
+manifest is the project's configuration: it lists the project's specs as
+file patterns and declares the tools that validators may run (see
+[Validators](/docs/concepts/validators)). `slcr` finds the project root by
+searching upward from the current directory, so commands work from anywhere
+in the project.
 
 ## Format versions
 
 Every SLCR file, whether a spec, validator file, manifest, or tool
-descriptor, declares the format version it's written in. Today that is
-`formatVersion = "1"`. A change to the format that would make existing files
-invalid needs a new format version, so a file always says which rules it
-follows.
+descriptor, declares the version of the format it uses. Today that is
+`formatVersion = "1"`. A change that would make existing files invalid
+requires a new format version, so every file states which rules it follows.

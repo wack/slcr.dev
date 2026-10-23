@@ -1,52 +1,53 @@
 ---
 title: Slices
-description: What a slice contains, what it leaves out, and how slicing shapes the way a spec should be written.
+description: What a slice contains, what it leaves out, and how slicing affects the way a spec is written.
 order: 22
 ---
 
-A **slice** is the part of a spec that one requirement needs: everything an
-agent, or a person, needs to understand and implement that requirement, and
-nothing more. `slcr slice REQ-ID` writes it to stdout as Markdown that reads
-like a short version of the rendered spec.
+A **slice** is the part of a spec that one requirement needs: everything
+required to understand and implement that requirement, and nothing more.
+`slcr slice REQ-ID` prints it as Markdown that reads like a shortened version
+of the rendered spec.
 
-Slicing is the answer to context rot. An agent handed a whole requirements
-document has to work out which parts matter for its task, and it gets that
-wrong more often as the document grows. A slice makes that decision ahead of
-time, by following the spec's [links](/docs/concepts/links-and-satisfaction)
-instead of leaving it to the agent's judgment.
+Slices address context rot. An agent given a whole requirements document has
+to work out which parts matter for its task, and it gets that wrong more
+often as the document grows. A slice makes that selection in advance by
+following the spec's [links](/docs/concepts/links-and-satisfaction), so it
+doesn't depend on the agent's judgment.
 
-## What a slice holds
+## What a slice contains
 
-For a requirement `R`, the slice holds:
+For a requirement `R`, the slice contains:
 
 - **`R`'s ancestors**, as headings with their bodies. This is the background
-  that every Section and requirement above `R` provides.
+  that every section and requirement above `R` provides.
 - **`R` and everything that refines it**, in full, with acceptance criteria.
-  This includes refiners nested elsewhere in the tree: the slice of
-  `todo-api`'s GET requirement includes the authentication requirement, even
-  though that requirement is nested under POST.
-- **What `R` refines**, under "Related requirements", so the implementer knows
-  what the work is part of.
-- **Everything `R` and its refiners depend on**, following `dependsOn`
-  links all the way down, also under "Related requirements". Each one appears
-  with its acceptance criteria and with the Sections it sits in, so its
-  background comes along too.
-- **A Glossary** of the terms used by everything above.
+  This includes refiners nested elsewhere in the tree. For example, the slice
+  of `todo-api`'s GET requirement includes the authentication requirement,
+  even though that requirement is nested under POST.
+- **What `R` refines**, under "Related requirements", so the implementer
+  knows what larger requirement the work is part of.
+- **Everything `R` and its refiners depend on**, following `dependsOn` links
+  transitively, also under "Related requirements". Each dependency appears
+  with its acceptance criteria and the sections it sits in, so its
+  background is included too.
+- **A glossary** of the terms used by everything above.
 
-A node included for more than one reason is shown in the most detail any of
-those reasons calls for. Nodes keep their numbers from the full document,
-and a reference to a node outside the slice becomes its plain title, so every
-link in the slice works.
+A node included for more than one reason appears once, in the most detail
+any of those reasons calls for. Nodes keep their numbers from the full
+document, and a reference to a node outside the slice appears as plain text,
+so every link in the slice resolves.
 
 ## What a slice leaves out
 
 A slice leaves out everything not reachable from the requirement:
 
-- **Sibling requirements.** They're someone else's work. Seeing them invites
-  an agent to build them too, or to mix their details into its own work.
+- **Sibling requirements.** They belong to other tasks. Including them
+  invites an agent to build them too, or to mix their details into its own
+  work.
 - **The internals of dependencies.** A dependency shows its own statement and
   criteria, not the requirements that refine it.
-- **Unrelated Sections**, however close by in the document.
+- **Unrelated sections**, however close they are in the document.
 
 ## An example
 
@@ -112,29 +113,26 @@ TodoListItem
 : A single item on a to-do list, with a title and a done flag.
 ```
 
-The controller's implementer gets the endpoint and the table it has to work
-with, and the meaning of "TodoListItem". It doesn't get the POST and GET
-requirements under the endpoint, and it doesn't get the Authentication
-section at all. Authentication matters to the API, but it isn't the
-controller's job.
+The controller's implementer receives the endpoint and table it works with,
+and the meaning of "TodoListItem". It doesn't receive the POST and GET
+requirements under the endpoint, or the Authentication section. Authentication
+matters to the API, but it isn't part of the controller's task.
 
-## Writing specs that slice well
+## How slicing affects spec structure
 
-Because a slice follows links and ancestry, where you put information
-decides who sees it:
+Because a slice is built from links and ancestry, where information sits in a
+spec determines which slices include it:
 
-- **Put shared background in a common ancestor.** A Section's body reaches
-  every slice beneath it. Background in a sibling Section never reaches the
-  requirements next to it.
-- **Link what an implementer needs.** If a requirement can't be built without
-  knowing about something elsewhere in the spec, add a `dependsOn` link to
-  it. Otherwise the slice won't include it.
-- **Define words in the Glossary and link them.** A term reaches a slice only
-  through `usesTerm`.
-- **Read the slice before you rely on it.** `slcr slice` shows exactly what an
-  implementer will see. If something is missing, fix the spec's structure.
-  Don't fix it by handing the agent the whole document.
+- A section's body reaches every slice beneath it. Background placed in a
+  sibling section doesn't reach neighboring requirements.
+- Context from elsewhere in the spec reaches a requirement's slice only
+  through a `dependsOn` link.
+- A term's definition reaches a slice only through `usesTerm`.
 
-Slices help people too. A reviewer checking one change can read the slice of
-the requirement it implements, instead of finding the relevant parts of a
-long document.
+`slcr slice` shows exactly what an implementer will see, which makes gaps in
+a spec's structure visible. A missing piece of context usually indicates a
+missing link or misplaced background.
+
+Slices are useful to people too. A reviewer checking one change can read the
+slice of the requirement it implements instead of searching a long document
+for the relevant parts.
