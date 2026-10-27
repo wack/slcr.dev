@@ -58,7 +58,10 @@ glossary:
 ```
 
 Every spec has a root section that holds everything else, and a glossary
-section that holds the terms.
+section that holds the terms. By structuring documents as a tree of sections,
+authors can _progressively disclose_ details about the software system
+only where relevant, giving agents the context relevant to the current
+task while omitting the details of unrelated subsystems.
 
 ## Four kinds of node
 
@@ -73,10 +76,10 @@ Every node has a `kind`, an `id`, and a one-line `title`. Prose fields are
 Markdown.
 
 **Sections** organize the spec the way a reader looks for things: by
-component, layer, or command. A section's `body` holds background such as
-motivation, assumptions, or context. Sections are never satisfied or
-unsatisfied. Their purpose is to give the requirements under them a place in
-the document and shared background, which every slice beneath the section
+component, layer, or command. A section's `body` is freeform Markdown, and typically
+holds background such as motivation, assumptions, or context.
+Sections are never satisfied or unsatisfied. Their purpose is to give the requirements under them a place in
+the document and shared information, which every slice beneath the section
 inherits.
 
 **Requirements** are the statements the code must satisfy. A requirement's
@@ -130,12 +133,17 @@ rendered document or generate it on demand. Projects that commit it can use
 ## Querying a spec
 
 Because a spec is a graph, it can also be queried. `slcr query` runs
-read-only GQL, a standard graph query language, over a spec. Nodes are
+read-only [GQL](https://en.wikipedia.org/wiki/Graph_Query_Language),
+a standard graph query language, over a spec. Nodes are
 labeled `Section`, `Requirement`, `AcceptanceCriterion`, and `Term`:
 
 ```bash
 slcr query "MATCH (r:Requirement) WHERE r.modality = 'MUST' RETURN r.id, r.title"
 ```
+
+This allows users to script analytical queries to watch the progress of their spec
+as requirements transition from unsatisfied to satisfied, or answer quick questions
+about the desired state of the finished software product.
 
 ## Projects
 
@@ -151,4 +159,5 @@ in the project.
 Every SLCR file, whether a spec, validator file, manifest, or tool
 descriptor, declares the version of the format it uses. Today that is
 `formatVersion = "1"`. A change that would make existing files invalid
-requires a new format version, so every file states which rules it follows.
+requires a new format version, so every file states which rules it follows,
+though this may not be enforced until `slcr` hits v1.0.

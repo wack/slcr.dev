@@ -67,9 +67,9 @@ with = { test = "items::post::creates_item" }
 
 Each validator names the requirement it checks (as a qualified ID),
 optionally the criterion it tests, the tool that runs the check, and the
-tool's settings under `with`. A directory holds at most one validator file.
-Because the file sits beside the code it checks, it moves when that code
-moves.
+tool's settings under `with` (in the style of GitHub Actions `with` blocks).
+A directory holds at most one validator file. Because the file sits beside the code
+it checks, it moves when that code moves.
 
 ### The dependency runs one way
 
