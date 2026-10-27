@@ -4,12 +4,12 @@ description: What SLCR is, the problems it addresses, and how specifications, sl
 order: 1
 ---
 
-**SLCR** (Sliceable, Linked, Checkable Requirements) is an open standard for
-software requirements that both people and coding agents work from. A
+**SLCR** (Sliceable, Linked, Checkable Requirements, pronounced *slicer*) is an open standard for
+software requirements for both people and coding agents. A
 project's requirements live in one structured specification. Agents read
 small, task-specific excerpts of it called _slices_. People read a Markdown
 document rendered from it. Validators in the codebase check whether the code
-meets each requirement.
+satisfies each requirement.
 
 This page explains the problems SLCR addresses and the ideas behind its
 design. To start using it, see the [Quickstart](/docs/getting-started/quickstart).
@@ -21,13 +21,14 @@ for what software should do. Code that doesn't match the spec is a bug.
 Agents use the spec to draft tickets, implement them, and verify the result.
 As projects grow, two problems appear.
 
-**Context rot.** An agent given a long requirements document is more likely
+**Context rot:** An agent given a long requirements document is more likely
 to confuse details or skip instructions. Most of that text is unrelated to
 the agent's current task, and the effect grows with the amount of text.
 
-**Compounding drift.** A requirement passes through several steps on its way
-to release: spec to ticket, ticket to code, code to test. Each step has a
-small chance of misreading the one before it. If each step has a 2% error
+**Compounding driftd:** A requirement passes through several steps on its way
+to release: spec to ticket, ticket to code, and code to test. Each step has a
+small chance of misreading the one before it, or failing to capture all of the necessary
+and important details in the writing agent's context. If each step has a 2% error
 rate, a project with 50 requirements that each pass through three steps has
 about a 95% chance that at least one requirement drifts. When drift is found
 late, it is hard to tell where it started.
@@ -52,44 +53,48 @@ From that one source, each audience gets a view suited to it:
   depends on, and the terms it uses. Sibling requirements are left out. This
   limits context rot. See [Slices](/docs/concepts/slices).
 - **People read rendered Markdown.** `slcr render` generates a conventional
-  requirements document from the spec. The spec is edited; the Markdown is
+  requirements document from the spec. When the spec is edited, the Markdown is
   regenerated.
 - **Validators provide evidence.** A validator ties a requirement to a check
   run by a tool the project declares, such as a test runner or a code
   matcher. `slcr check` runs every validator and reports each requirement as
   satisfied, unsatisfied, or unknown (not yet covered). Drift is caught at
   the requirement where it occurred. See [Validators](/docs/concepts/validators).
+  This provides a single source of truth for the current status of every requirement
+  in the spec, verified by tests.
 
-Validators refer to requirements, but requirements never refer to
-validators. The spec stays free of implementation detail, so stakeholders
-can read it without knowing how each requirement is tested.
-
+The spec stays free of implementation detail, so stakeholders
+can read it without knowing how each requirement is tested. Validators
+refer to requirements, but requirements never refer to validators. This
+creates a separation of concerns between the intended software product and
+the low-level implementation details describing how the requirements are met.
+ 
 ## How the pieces fit together
 
-A typical loop for an agent implementing one requirement:
+A typical loop for an agent implementing one requirement, following a Test-Driven Development style:
 
 1. Read the requirement's slice.
 2. Write a validator for one of its acceptance criteria and confirm that it
    fails.
 3. Implement the requirement until the validator passes.
-4. Run `slcr check` to confirm the requirement, and any parents it refines,
-   are satisfied.
+4. Run `slcr check` to confirm the requirement is satisfied.
 
 This red-green loop is recommended but not required. In CI, the same
 commands confirm that the project is well formed, that every requirement is
-satisfied, and that any committed rendering matches the spec.
+satisfied. If you decide to vendor the spec's Mark, then you can also check to
+ensure that the vendor's Markdown hasn't drifted from the spec.
 
 ## What SLCR includes
 
 - **The format**: specifications, validator files, the `SLCR.toml` project
-  manifest, and tool descriptors. The format is open, so any tool can read
+  configuration file, and tool descriptors. The format is open, so any tool can read
   and write it.
 - **`slcr`**: the reference command-line tool. It creates, vets, slices,
   renders, queries, and checks SLCR projects.
 - **An agent skill**: instructions that teach coding agents when and how to
   use SLCR.
 
-SLCR is pre-release, and the formats may change before 1.0.
+SLCR is pre-release, and the formats may change before v1.0.
 
 ## Where to go next
 
