@@ -1,0 +1,265 @@
+---
+title: "Tutorial: write a small SLCR specification"
+description: Learn SLCR by writing a small specification, checking it with validators, and seeing requirements go from unsatisfied to satisfied.
+order: 12
+---
+
+In this tutorial, you'll specify a tiny command-line script, write
+validators that check it, and implement it until every requirement is
+satisfied. Along the way, you'll render the spec as a document and read a
+slice.
+
+You'll need a Unix-like shell (macOS or Linux) and about 15 minutes. To set
+up SLCR in an existing project instead, see the
+[Quickstart](/docs/getting-started/quickstart).
+
+## 1. Install `slcr`
+
+SLCR hasn't had its first release yet, so install the CLI from source. This
+requires [Rust](https://rustup.rs) and takes a few minutes to build:
+
+```bash
+cargo install --git https://github.com/wack/slcr --locked
+```
+
+Check that it worked:
+
+```console
+$ slcr version
+v0.1.0
+```
+
+## 2. Create a project
+
+Make a directory for the project and create a specification in it:
+
+```console
+$ mkdir greeter && cd greeter
+$ slcr init SPEC.slcr.yaml --title Greeter
+SPEC.slcr.yaml: created specification greeter
+SLCR.toml: created project manifest
+```
+
+`slcr init` created two files. `SLCR.toml` marks the project's root and
+lists its specifications. `SPEC.slcr.yaml` is the specification, named
+`greeter` after the directory. It has a root section and an empty glossary.
+
+## 3. Write requirements
+
+Open `SPEC.slcr.yaml` and replace its contents with:
+
+```yaml
+$schema: https://slcr.dev/reference/schemas/spec/v1.schema.json
+formatVersion: "1"
+spec:
+  name: greeter
+root:
+  kind: section
+  id: SEC-001
+  title: Greeter
+  body: A command-line script, `greet.sh`, that greets a person by name.
+  children:
+    - kind: requirement
+      id: REQ-001
+      title: Greets a person
+      body: The script MUST greet the person it is given.
+      modality: MUST
+      refinement: AND
+      children:
+        - kind: requirement
+          id: REQ-002
+          title: Prints a greeting
+          body: Given a name, the script MUST print `Hello, <name>!`.
+          modality: MUST
+          refines: [REQ-001]
+          acceptanceCriteria:
+            - kind: acceptanceCriterion
+              id: AC-001
+              title: Greets Ada
+              body: Running the script with `Ada` prints exactly `Hello, Ada!`.
+        - kind: requirement
+          id: REQ-003
+          title: Rejects a missing name
+          body: Given no name, the script MUST exit with a non-zero status.
+          modality: MUST
+          refines: [REQ-001]
+          acceptanceCriteria:
+            - kind: acceptanceCriterion
+              id: AC-002
+              title: Fails without arguments
+              body: Running the script with no arguments exits with a non-zero status.
+glossary:
+  kind: section
+  id: SEC-002
+  title: Glossary
+```
+
+This spec has one top-level requirement, `REQ-001`, made of two parts.
+`REQ-002` and `REQ-003` each list `REQ-001` in `refines`, and `REQ-001`
+combines them with `AND`, so it's satisfied only when both are. Each part has
+an acceptance criterion describing what "done" looks like.
+
+Check that the spec is well formed:
+
+```console
+$ slcr vet
+SLCR.toml: ok
+SPEC.slcr.yaml: ok
+```
+
+## 4. Render the spec
+
+Generate a readable document from the spec:
+
+```console
+$ slcr render SPEC.slcr.yaml
+SPEC.md: rendered greeter
+```
+
+Open `SPEC.md`. It reads like a conventional requirements document, with
+numbered headings and the acceptance criteria under each requirement. This
+is the version people read. The YAML file stays the source: to change the
+document, you edit the spec and render again.
+
+## 5. Read a slice
+
+A slice is the part of the spec that one requirement needs. Print the slice
+for `REQ-002`:
+
+```console
+$ slcr slice REQ-002 SPEC.slcr.yaml
+```
+
+The output includes the Greeter section's background, the parent
+requirement, and `REQ-002` with its acceptance criterion. It doesn't include
+`REQ-003`, which is a separate task. This is the context an agent would
+receive to implement `REQ-002`.
+
+## 6. Declare a tool
+
+Validators run tools that the project declares. For this tutorial, you'll
+declare `sh`, so validators can run short shell scripts.
+
+Create `tools/sh.toml`:
+
+```toml
+formatVersion = "1"
+name = "sh"
+version = "1.0.0"
+
+[validator.schema]
+type = "object"
+required = ["script"]
+additionalProperties = false
+properties.script = { type = "string", minLength = 1 }
+
+[invoke]
+argv = ["sh", "-c", "{with.script}"]
+cwd = "project"
+```
+
+This descriptor says that each validator provides a `script`, which runs
+with `sh -c` from the project root. Declare it:
+
+```console
+$ slcr tools add tools/sh.toml
+SLCR.toml: added tool sh 1.0.0
+```
+
+`SLCR.toml` now lists the tool with a pin, a hash of the descriptor's exact
+contents.
+
+## 7. Write validators
+
+Create `.validators.slcr.toml` in the project root, with one validator for
+each acceptance criterion:
+
+```toml
+formatVersion = "1"
+
+[[validator]]
+requirement = "greeter/REQ-002"
+criterion = "AC-001"
+tool = "sh"
+with = { script = 'test "$(sh greet.sh Ada)" = "Hello, Ada!"' }
+
+[[validator]]
+requirement = "greeter/REQ-003"
+criterion = "AC-002"
+tool = "sh"
+with = { script = "test -f greet.sh && ! sh greet.sh" }
+```
+
+Each validator names its requirement with the spec's name, `greeter`. The
+second one checks that `greet.sh` exists before checking that it fails.
+Without that, it would pass right now, because running a missing script
+also fails, and the validator would prove nothing.
+
+## 8. Watch the check fail
+
+`greet.sh` doesn't exist yet, so both validators should fail:
+
+```console
+$ slcr check
+.validators.slcr.toml validator 1 (greeter/REQ-002 AC-001, sh): red (exit 1)
+.validators.slcr.toml validator 2 (greeter/REQ-003 AC-002, sh): red (exit 1)
+greeter: 0 satisfied, 3 unsatisfied, 0 unknown
+```
+
+Both parts are unsatisfied, so `REQ-001` is too. Because all three are
+`MUST` requirements, `check` fails and lists each one as a violation.
+Seeing every validator fail first confirms that each can tell the difference.
+
+## 9. Implement the script
+
+Create `greet.sh`:
+
+```sh
+#!/bin/sh
+if [ -z "$1" ]; then
+  echo "usage: greet.sh NAME" >&2
+  exit 1
+fi
+echo "Hello, $1!"
+```
+
+Run the check again:
+
+```console
+$ slcr check
+.validators.slcr.toml validator 1 (greeter/REQ-002 AC-001, sh): green
+.validators.slcr.toml validator 2 (greeter/REQ-003 AC-002, sh): green
+greeter: 3 satisfied, 0 unsatisfied, 0 unknown
+```
+
+Both validators pass, so both parts are satisfied, and their `AND` satisfies
+`REQ-001`.
+
+## What you've built
+
+You now have a project where:
+
+- the spec states what the script must do, in a form tools can work with
+- `SPEC.md` presents the same requirements as a document for people
+- each requirement can be sliced into the context needed to implement it
+- validators check each requirement, and `slcr check` reports whether the
+  code meets the spec
+
+## Next steps
+
+- Set up SLCR in your own project with the
+  [Quickstart](/docs/getting-started/quickstart).
+- Learn the ideas behind what you just did in
+  [Specifications](/docs/concepts/specifications),
+  [Links and satisfaction](/docs/concepts/links-and-satisfaction),
+  [Slices](/docs/concepts/slices), and
+  [Validators](/docs/concepts/validators).
+- Write requirements for a real project with
+  [Writing requirements](/docs/guides/writing-requirements), or convert an
+  existing document with
+  [Migrating existing documents](/docs/guides/migrating).
+- Use your project's test runner as a tool with
+  [Add a validator tool](/docs/guides/add-a-validator-tool).
+- Check every change automatically with [Run SLCR in CI](/docs/guides/run-in-ci).
+- Let a coding agent work this way with the
+  [agent skill](/docs/faq#how-do-i-use-slcr-with-a-coding-agent).

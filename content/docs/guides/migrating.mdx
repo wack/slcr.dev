@@ -15,32 +15,15 @@ after each pass is easier than reviewing everything at once.
 
 ## Before you start
 
-- Install the `slcr` CLI and the agent skill. The skill teaches the agent the
-  format and the CLI:
-
-  ```bash
-  npx skills add wack/slcr
-  ```
-
-- Put the source document where the agent can read it, ideally as Markdown or
-  plain text in the repository. Export documents from tools such as Google
-  Docs or Notion first. Tables and numbered lists convert more reliably than
-  screenshots or diagrams.
-- Decide whether to migrate the whole document or one area at a time. For a
-  long document, migrate one top-level area per session, into the same spec.
-  Each session reviews more easily, and the result stays one spec.
-
-## Create the spec
-
-Run `slcr init` from the repository root, naming the spec after what it
-describes:
-
-```bash
-slcr init --name todo-api --title "TodoList API"
-```
-
-This creates `SPEC.slcr.toml` with an empty root section and glossary, and
-`SLCR.toml` if the repository doesn't have one yet.
+1. Complete [steps 1 and 2 of the Quickstart](/docs/getting-started/quickstart#1-install-the-cli-and-the-agent-skill)
+   to install the CLI and the agent skill and create `SPEC.slcr.toml`.
+2. Put the source document where the agent can read it, ideally as Markdown
+   or plain text in the repository. Export documents from tools such as
+   Google Docs or Notion first. Tables and numbered lists convert more
+   reliably than screenshots or diagrams.
+3. Decide whether to migrate the whole document or one area at a time. For a
+   long document, migrate one top-level area per session, into the same
+   spec. Each session reviews more easily, and the result stays one spec.
 
 ## Pass 1: structure and requirements
 
@@ -136,7 +119,7 @@ its legacy ID on the parent, and its parts get new titles.
    `slcr slice REQ-ID`. Each slice should contain what an implementer needs.
    A missing piece of context usually means a missing `dependsOn` link or
    background in the wrong section. See
-   [Writing Requirements](/docs/guides/writing-requirements).
+   [Writing requirements](/docs/guides/writing-requirements).
 
 Fix problems in the spec, either directly or by asking the agent, then
 commit.
@@ -157,23 +140,12 @@ Run slcr vet when you're done.
 Review the criteria the same way: render, read them against the source, and
 resolve the requirements the agent listed.
 
-## Connect existing tests
+## Connect existing tests and check
 
-If the code already exists, ask the agent to connect existing tests to the
-requirements they verify:
-
-```text
-For each requirement in SPEC.slcr.toml, find existing tests that verify it,
-and add validators for them, using the slcr skill. Don't write new tests.
-Declare any tool you need with slcr tools add. Run slcr check when you're
-done, and list the requirements that have no validator.
-```
-
-Requirements without validators are reported as unknown, not as failures,
-so the build doesn't break while coverage grows. See
-[Add a Validator Tool](/docs/guides/add-a-validator-tool) for declaring
-tools, and [Run SLCR in CI](/docs/guides/run-in-ci) to check the spec on
-every change.
+If the code already exists, continue with
+[steps 4 and 5 of the Quickstart](/docs/getting-started/quickstart#4-connect-your-existing-tests)
+to connect your existing tests to the requirements and check the code
+against the spec.
 
 ## Retire the original document
 
