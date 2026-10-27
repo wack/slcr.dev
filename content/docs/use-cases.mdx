@@ -1,0 +1,186 @@
+---
+title: Use cases
+description: What SLCR is used for, from building with coding agents to catching drift in CI, and when it isn't a good fit.
+order: 2
+---
+
+SLCR is designed for projects where coding agents write much of the code,
+working from a specification across many tickets. Its parts are also useful
+on their own. This page describes the jobs SLCR helps with and links to the
+pages that cover each part in depth. For what SLCR is and the problems it
+addresses, see the [Overview](/docs/overview).
+
+## Building a project with coding agents
+
+On a long project, agents work through many tickets, each implementing one
+or more requirements. For each requirement, an agent reads its
+[slice](/docs/concepts/slices) instead of the whole spec, writes a
+[validator](/docs/concepts/validators) and confirms it fails, implements
+until the validator passes, and runs `slcr check`:
+
+```bash
+slcr slice REQ-005    # the context for this task
+slcr check            # whether every requirement is satisfied
+```
+
+The slice limits each agent to the context its task needs. Validators make
+completion something a tool reports rather than something the agent
+asserts: a requirement whose validators pass is satisfied, and a requirement
+with no validators is reported as unknown. The
+[agent skill](/docs/faq#how-do-i-use-slcr-with-a-coding-agent) teaches coding
+agents this workflow.
+
+## Planning and tracking work
+
+A spec divides naturally into work. Each leaf requirement, one that nothing
+refines, can be implemented and checked on its own, and its slice includes
+everything it depends on. The slice can serve as the context for a ticket.
+
+`slcr check` shows where the project stands. Its summary line counts each
+status:
+
+```console
+$ slcr check
+...
+todo-api: 6 satisfied, 1 unsatisfied, 3 unknown (2 coverage gaps)
+```
+
+Coverage gaps are leaf requirements with no validator, which is the work not
+yet verified. Other requirements can be unknown because they depend on those
+leaves, which is why the unknown count can be higher. `--format json` lists
+the gaps by ID. For example, with `jq`:
+
+```bash
+slcr check --format json | jq -r '.specs[] | .name as $n | .coverageGaps[] | "\($n)/\(.)"'
+```
+
+Because results follow `refines` links, progress rolls up: a parent
+requirement becomes satisfied when its parts are, as its `AND`, `OR`, or
+`XOR` specifies. See
+[Links and Satisfaction](/docs/concepts/links-and-satisfaction).
+
+## Keeping code and spec in step in CI
+
+Without a check, specs and code drift apart. Running SLCR in CI fails the
+build when they disagree:
+
+```bash
+slcr vet --deny-warnings        # specs, validators, and manifest are well formed
+slcr render --expect-no-diff    # the committed SPEC.md matches the spec
+slcr check --deny-warnings      # every requirement is satisfied
+```
+
+A refactor that breaks a validated `MUST` requirement fails the build, even
+when the code still compiles. A spec edited without rendering it again also
+fails, so the document people read stays in step with the one agents work
+from.
+
+Modality sets how strict the check is. An unsatisfied `MUST` always fails
+`check`. An unsatisfied `SHOULD` fails it only with `--deny-warnings`, as in
+the commands above. A `MAY` never does. See
+[Run SLCR in CI](/docs/guides/run-in-ci) for a complete setup.
+
+## Reviewing changes
+
+SLCR helps with review at three points.
+
+**Reviewing an implementation.** A reviewer can read the slice of the
+requirement a pull request implements, instead of searching a long document
+for the relevant parts. The slice is the same context the implementer worked
+from.
+
+**Reviewing a change in behavior.** When behavior changes, the requirement,
+its acceptance criteria, the code, and its validators change together in one
+pull request. The diff of the rendered `SPEC.md` shows the change in plain
+language, next to the code that implements it.
+
+**Planning a change.** Before changing something, a query shows what relies
+on it. Here, the controller depends on the `todo_list_item` table:
+
+```console
+$ slcr query "MATCH (r:Requirement)-[:DEPENDS_ON]->(t {id: 'REQ-007'}) RETURN r.id, r.title"
+r.id     r.title
+-------  -----------------------
+REQ-005  TodoListItem controller
+(1 row)
+```
+
+The same kind of query over `REFINES` shows which larger requirements a
+change could affect.
+
+## Enforcing architectural rules
+
+Validators aren't limited to tests. A validator can run any tool a project
+declares, including structural code matchers such as `ast-grep`, so a rule
+about the shape of the code can be a requirement like any other:
+
+```yaml
+- kind: requirement
+  id: REQ-011
+  title: Views never query the database
+  body: View handlers MUST NOT query the database directly.
+  modality: MUST NOT
+  rationale: Queries belong in models, where they can be reused and tested.
+```
+
+```toml
+# src/views/.validators.slcr.toml
+formatVersion = "1"
+
+[[validator]]
+requirement = "todo-api/REQ-011"
+tool = "ast-grep"
+description = "No database calls in view handlers"
+with = { rule = "rules/no-db-in-views.yml" }
+```
+
+The validator goes red when the rule finds a database call in a view, and
+`slcr check` reports a `MUST NOT` violation. Layering rules, banned APIs,
+required registrations, and configuration checks work the same way. When no
+existing tool fits, a short script committed to the repository can serve as
+the tool. See [Add a Validator Tool](/docs/guides/add-a-validator-tool).
+
+## Bringing a codebase under a spec
+
+SLCR doesn't require starting from scratch, and a project can hold more than
+one spec.
+
+**Existing code.** Requirements can describe what the code already does,
+with validators pointing at existing tests. Requirements without validators
+are reported as unknown, which shows the gaps in coverage without failing
+the build. This allows adopting SLCR one area at a time. To convert an
+existing requirements document, see
+[Migrating Existing Documents](/docs/guides/migrating).
+
+**Several specs.** A project's `SLCR.toml` lists every spec it holds, such as
+one spec per service:
+
+```toml
+formatVersion = "1"
+specs = ["SPEC.slcr.toml", "services/*/SPEC.slcr.yaml"]
+```
+
+Each spec has a unique name, and validators refer to requirements by that
+name, as in `billing/REQ-004`, so IDs in different specs never collide. A
+new feature can also start in its own spec. Moving its requirements into
+another spec later gives them new qualified IDs, so the validators that
+refer to them must be updated. See
+[Specifications](/docs/concepts/specifications).
+
+## When SLCR isn't a good fit
+
+SLCR requires some structure up front, which isn't always worth the cost:
+
+- **Throwaway prototypes.** When requirements change by the hour, keeping a
+  spec and its validators current costs more than it saves. A spec is more
+  useful once the design settles.
+- **Very small projects.** If the whole spec fits easily in an agent's
+  context and one person can keep track of all of it, slices and validators
+  add little.
+- **Projects that need a stable format today.** SLCR is pre-release, and its
+  formats may change before 1.0. See
+  [Is SLCR ready to use?](/docs/faq#is-slcr-ready-to-use)
+- **Requirements no program can check.** SLCR can still organize and slice
+  requirements about look and feel, or anything that needs a person's
+  judgment. Those requirements stay unknown unless a validator can check
+  them.
