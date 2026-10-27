@@ -6,18 +6,19 @@ order: 3
 
 ## Is SLCR ready to use?
 
-SLCR is pre-release. The formats may change before 1.0, and a change that
-makes existing files invalid will come with a new format version. Every SLCR
-file declares the format version it uses.
+SLCR is pre-release, but the `slcr` CLI tool is already useful for a wide variety of projects.
+The SLCR open standard may change before v1.0, so it's possible you may see breaking
+changes when upgrading the `slcr` CLI, but we will attempt to keep these changes to a minimum
+and to provide a clean upgrade path where possible.
 
-Some features are not built yet. Today, a validator's result comes only from
-the exit code of the tool it runs, and every `slcr check` reruns every
-validator. Structured validator results and result caching are planned.
+Some features are not built yet. For example, without validator result caching,
+every `slcr check` reruns every validator. Structured validator results
+and result caching are planned.
 
 Feedback from real projects is especially useful at this stage. See
 [How do I propose a change to the standard?](#how-do-i-propose-a-change-to-the-standard)
 
-## Does SLCR use itself?
+## Is SLCR self-hosting?
 
 Yes. The [`slcr` repository](https://github.com/wack/slcr) keeps the CLI's
 requirements in an SLCR specification,
@@ -76,10 +77,9 @@ written in Markdown.
 
 ## Can I edit the rendered `SPEC.md`?
 
-Edits to `SPEC.md` don't carry back to the specification, and the next
-`slcr render` replaces them. Make changes in the specification file and
-render again. By default, `slcr render` refuses to overwrite a file it
-didn't generate.
+You can, but you shouldn't. Edits to `SPEC.md` don't carry back to the specification, and the next
+`slcr render` will overwrite your changes. Make changes in the specification file
+and render again.
 
 ## Which languages and test frameworks does SLCR support?
 
@@ -94,13 +94,16 @@ something and report the result with an exit code, a validator can use it.
 `slcr check` runs the commands that a project's tool descriptors declare, the
 same way running a project's test suite runs its tests. Run it only in
 repositories you trust. `slcr vet` and `slcr render` never run project
-commands.
+commands. As an added layer of protection, `slcr` stores a Blake3 checksum
+of the tool descritor to ensure that the tool descriptor can't be tampered
+with between `slcr check` executions.
 
 ## Which platforms does `slcr` run on?
 
 Release builds target macOS (Apple silicon and Intel) and Linux (x86_64 and
 ARM64). Windows isn't currently a build target. See
-[Installation](/docs/getting-started/installation).
+[Installation](/docs/getting-started/installation). If you'd like to see
+Windows support, please [open an issue](https://github.com/wack/slcr/issues).
 
 ## How does SLCR relate to other requirements formats?
 
@@ -131,6 +134,6 @@ the output of `slcr version`, the command you ran and what it printed, and
 the smallest files that reproduce the problem.
 
 Don't report security vulnerabilities in public issues. Email
-security@slcr.dev, or use GitHub's
+`security@wack.run`, or use GitHub's
 [private vulnerability reporting](https://github.com/wack/slcr/security/advisories/new).
 See the [Security](/security) page for details.
