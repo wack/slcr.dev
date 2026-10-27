@@ -56,15 +56,8 @@ repository also includes an [agent skill](https://github.com/wack/slcr/tree/trun
 that teaches an agent when to read a slice, how to write specifications and
 validators, and how to learn the CLI from `--help`. It's written in the
 [Claude skill](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview)
-format. To add it to a repository, run this from the repository root:
-
-```bash
-npx skills add wack/slcr
-```
-
-This installs the skill into `.claude/skills/slcr/` and records it in
-`skills-lock.json`. It can also install the skill for other coding agents.
-Commit both.
+format. To add it to a repository, see
+[Install the agent skill](/docs/getting-started/installation#install-the-agent-skill).
 
 ## Can I write specifications in Markdown?
 
@@ -98,8 +91,8 @@ commands.
 
 ## Which platforms does `slcr` run on?
 
-Release builds target macOS (Apple silicon and Intel) and Linux (x86_64 and
-ARM64). Windows isn't currently a build target. See
+Prebuilt binaries are available for macOS (Apple silicon and Intel) and
+Linux (x86_64 and ARM64). Windows isn't supported. See
 [Installation](/docs/getting-started/installation).
 
 ## How does SLCR relate to other requirements formats?

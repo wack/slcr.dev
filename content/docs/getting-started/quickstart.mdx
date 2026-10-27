@@ -13,11 +13,10 @@ small example first, see the [Tutorial](/docs/getting-started/tutorial).
 
 ## 1. Install the CLI and the agent skill
 
-SLCR hasn't had its first release yet, so install the CLI from source. This
-requires [Rust](https://rustup.rs):
+Install the CLI with Homebrew:
 
 ```bash
-cargo install --git https://github.com/wack/slcr --locked
+brew install wack/tap/slcr
 ```
 
 From the repository root, install the agent skill, which teaches coding
@@ -26,6 +25,9 @@ agents to use SLCR:
 ```bash
 npx skills add wack/slcr
 ```
+
+See [Installation](/docs/getting-started/installation) for other ways to
+install either one.
 
 ## 2. Create a specification
 
@@ -91,8 +93,10 @@ and unknown:
 - **Unsatisfied** requirements have a failing test. Either the code or the
   requirement is wrong. See
   [Troubleshoot `slcr check`](/docs/guides/troubleshoot-slcr-check).
-- **Unknown** requirements have no test yet. These are coverage gaps, and
-  they don't fail the check.
+- **Unknown** requirements can't be decided yet. A requirement with no
+  validator and nothing refining it is a coverage gap. A requirement made of
+  parts is unknown when its unknown parts could still change the result.
+  Unknown requirements don't fail the check.
 
 ## Next steps
 

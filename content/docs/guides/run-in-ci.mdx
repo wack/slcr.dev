@@ -42,7 +42,10 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Install slcr
-        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/wack/slcr/releases/latest/download/slcr-installer.sh | sh
+        run: |
+          curl --proto '=https' --tlsv1.2 -LsSf https://github.com/wack/slcr/releases/download/v0.1.0/slcr-installer.sh \
+            | SLCR_UNMANAGED_INSTALL="$HOME/.local/bin" sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       # Install every program your validators run. This example uses cargo-nextest.
       - name: Install validator tools
@@ -62,6 +65,11 @@ jobs:
         if: ${{ !cancelled() }}
         run: slcr check --offline --deny-warnings
 ```
+
+The install step pins a specific release, so CI changes versions only when
+you update the URL. See
+[Installation](/docs/getting-started/installation#install-in-ci) for what
+`SLCR_UNMANAGED_INSTALL` does.
 
 The `if: ${{ !cancelled() }}` conditions run each check even when an earlier
 one fails, so one failure doesn't hide another.

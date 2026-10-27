@@ -1,7 +1,129 @@
 ---
 title: Installation
-description: Install the tools that read and check SLCR documents.
-order: 11
+description: Install the `slcr` CLI and the agent skill, keep them up to date, and install them in CI.
+order: 10
 ---
 
-_Placeholder: how to install any reference tooling, and supported platforms._
+SLCR has two parts to install: the `slcr` command-line tool, and the agent
+skill that teaches coding agents to use it. The CLI is enough to work with
+SLCR by hand. Install the skill too if you work with a coding agent.
+
+## Install the CLI
+
+Prebuilt binaries are available for macOS and Linux.
+
+### Homebrew
+
+```bash
+brew install wack/tap/slcr
+```
+
+### Shell installer
+
+```bash
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/wack/slcr/releases/latest/download/slcr-installer.sh | sh
+```
+
+The installer downloads the binary for your platform and installs `slcr`,
+along with an updater, `slcr-update`, into `$CARGO_HOME/bin`, or
+`~/.cargo/bin` if `CARGO_HOME` isn't set. It also adds that directory to
+your `PATH` in your shell's profile. Open a new shell, or follow the
+command the installer prints, before running `slcr`.
+
+To install without changing your shell profile, set `SLCR_NO_MODIFY_PATH=1`
+before running the installer.
+
+### Check the installation
+
+```console
+$ slcr version
+v0.1.0
+```
+
+## Supported platforms
+
+| Platform | Architecture |
+| --- | --- |
+| macOS | Apple silicon (`aarch64`), Intel (`x86_64`) |
+| Linux (glibc) | `x86_64`, ARM64 (`aarch64`) |
+| Linux (musl) | `x86_64` |
+
+Windows isn't supported. Each binary is also available directly from the
+[releases page](https://github.com/wack/slcr/releases), with a SHA-256
+checksum.
+
+## Install the agent skill
+
+From the root of the repository the agent works in:
+
+```bash
+npx skills add wack/slcr
+```
+
+This finds the skill in the `slcr` repository and installs it into the
+repository, for example into `.claude/skills/slcr/` for Claude Code. It can
+also install the skill for other coding agents. Commit the installed files
+so everyone working in the repository has the skill.
+
+Without Node.js, download the skill directly:
+
+```bash
+mkdir -p .claude/skills
+curl -fsSL https://github.com/wack/slcr/archive/refs/heads/trunk.tar.gz \
+  | tar -xz --strip-components=2 -C .claude/skills slcr-trunk/skills/slcr
+```
+
+## Update
+
+How you update depends on how you installed:
+
+| Installed with | Update with |
+| --- | --- |
+| Homebrew | `brew upgrade slcr` |
+| Shell installer | `slcr-update` |
+| `cargo install` | The same `cargo install` command again |
+| `npx skills add` | `npx skills update` |
+| The `curl` command for the skill | The same command again |
+
+`slcr-update` installs the latest release. To install a specific one, use
+`slcr-update --version 0.1.0`.
+
+## Install in CI
+
+In CI, install the CLI into a known directory without changing any shell
+profile, and without the updater:
+
+```bash
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/wack/slcr/releases/download/v0.1.0/slcr-installer.sh \
+  | SLCR_UNMANAGED_INSTALL="$HOME/.local/bin" sh
+```
+
+This installs only `slcr`, into the directory you name. Add that directory to
+the `PATH` of later steps if it isn't already there. The URL names a
+specific release, so CI doesn't change versions until you update it. See
+[Run SLCR in CI](/docs/guides/run-in-ci) for a complete setup.
+
+## Build from source
+
+To build from source, for example to run unreleased changes, install
+[Rust](https://rustup.rs) and run:
+
+```bash
+cargo install --git https://github.com/wack/slcr --locked
+```
+
+This builds the latest `trunk`. Add `--tag v0.1.0` to build a release
+instead.
+
+## Uninstall
+
+| Installed with | Uninstall with |
+| --- | --- |
+| Homebrew | `brew uninstall slcr` |
+| Shell installer | Delete `slcr` and `slcr-update` from `$CARGO_HOME/bin` (`~/.cargo/bin` by default), and the install receipt in `~/.config/slcr` |
+| `cargo install` | `cargo uninstall slcr` |
+| The agent skill | Delete its directory, such as `.claude/skills/slcr/`, and commit the change |
+
+Installed tool descriptors are stored separately, in `slcr`'s data
+directory (on Linux, `$XDG_DATA_HOME/slcr`, or `~/.local/share/slcr` if
+`XDG_DATA_HOME` isn't set). Delete it to remove them.

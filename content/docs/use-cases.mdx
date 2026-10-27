@@ -27,7 +27,7 @@ The slice limits each agent to the context its task needs. Validators make
 completion something a tool reports rather than something the agent
 asserts: a requirement whose validators pass is satisfied, and a requirement
 with no validators is reported as unknown. The
-[agent skill](/docs/faq#how-do-i-use-slcr-with-a-coding-agent) teaches coding
+[agent skill](/docs/getting-started/installation#install-the-agent-skill) teaches coding
 agents this workflow.
 
 ## Planning and tracking work
@@ -95,7 +95,8 @@ pull request. The diff of the rendered `SPEC.md` shows the change in plain
 language, next to the code that implements it.
 
 **Planning a change.** Before changing something, a query shows what relies
-on it. Here, the controller depends on the `todo_list_item` table:
+on it. Here, the query finds what depends on `REQ-007`, the requirement for
+the `todo_list_item` table. The controller does:
 
 ```console
 $ slcr query "MATCH (r:Requirement)-[:DEPENDS_ON]->(t {id: 'REQ-007'}) RETURN r.id, r.title"
