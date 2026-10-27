@@ -1,20 +1,104 @@
 ---
 title: Quickstart
-description: Write your first SLCR document in a few minutes.
-order: 10
+description: Set up SLCR in an existing project with a coding agent, and see which requirements your code already meets.
+order: 11
 ---
 
-_Placeholder: a step-by-step walkthrough that ends with a small, valid SLCR
-document._
+This guide sets up SLCR in an existing repository. By the end, you'll have a
+specification for one area of your code, validators connected to your
+existing tests, and a report of which requirements the code meets.
 
-## 1. Create a document
+A coding agent does most of the writing. To learn how SLCR works with a
+small example first, see the [Tutorial](/docs/getting-started/tutorial).
 
-_Placeholder._
+## 1. Install the CLI and the agent skill
 
-## 2. Add a requirement
+SLCR hasn't had its first release yet, so install the CLI from source. This
+requires [Rust](https://rustup.rs):
 
-_Placeholder._
+```bash
+cargo install --git https://github.com/wack/slcr --locked
+```
 
-## 3. Check it
+From the repository root, install the agent skill, which teaches coding
+agents to use SLCR:
 
-_Placeholder._
+```bash
+npx skills add wack/slcr
+```
+
+## 2. Create a specification
+
+From the repository root:
+
+```bash
+slcr init --name <project-name> --title "<Project Name>"
+```
+
+This creates `SPEC.slcr.toml` and the project manifest, `SLCR.toml`.
+
+## 3. Write requirements for one area
+
+Pick one well-understood area of the codebase, such as one service, API, or
+command, and ask your agent:
+
+```text
+Using the slcr skill, write requirements in SPEC.slcr.toml for <area>,
+describing what the code does today. Add acceptance criteria. Run slcr vet
+and fix anything it reports.
+```
+
+If you already have a requirements document for that area, convert it
+instead. See [Migrating existing documents](/docs/guides/migrating).
+
+Review the result as a document:
+
+```bash
+slcr render
+```
+
+Read `SPEC.md` and correct anything that doesn't match how the code should
+behave.
+
+## 4. Connect your existing tests
+
+Ask your agent:
+
+```text
+Using the slcr skill, declare a tool for this project's test runner with
+slcr tools add, writing a descriptor in tools/ if needed. Then add
+validators that connect existing tests to the requirements they verify.
+Don't write new tests. Run slcr vet when you're done.
+```
+
+See [Add a validator tool](/docs/guides/add-a-validator-tool) to declare a
+tool yourself.
+
+## 5. Check the code against the spec
+
+```bash
+slcr check
+```
+
+The summary line shows how many requirements are satisfied, unsatisfied,
+and unknown:
+
+```console
+<project-name>: 9 satisfied, 1 unsatisfied, 4 unknown (3 coverage gaps)
+```
+
+- **Satisfied** requirements are verified by passing tests.
+- **Unsatisfied** requirements have a failing test. Either the code or the
+  requirement is wrong. See
+  [Troubleshoot `slcr check`](/docs/guides/troubleshoot-slcr-check).
+- **Unknown** requirements have no test yet. These are coverage gaps, and
+  they don't fail the check.
+
+## Next steps
+
+- Close coverage gaps by asking your agent to write validators for the
+  unknown requirements, one at a time, from each requirement's slice.
+- Add the next area of the codebase to the same spec.
+- Check every change automatically with [Run SLCR in CI](/docs/guides/run-in-ci).
+- Learn the ideas behind SLCR in [Specifications](/docs/concepts/specifications)
+  and the other Concepts pages.

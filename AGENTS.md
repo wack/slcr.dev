@@ -81,7 +81,13 @@ Adding a page needs no route or component code. The file is the page.
 3. Write the body. The page template already renders `title` as the page's
    `<h1>`, so start body headings at `##`. GitHub-flavored Markdown
    (tables, strikethrough, task lists, bare-URL autolinks) is enabled via
-   `remark-gfm`. The body is MDX, not plain
+   `remark-gfm`. Fenced code blocks are syntax-highlighted at build time by
+   Shiki (`@shikijs/rehype` in `content-collections.ts`): tag each fence with
+   its language (` ```toml `, ` ```bash `, ` ```console `). Untagged fences,
+   or tags Shiki doesn't know, render as plain text. Each block gets a header
+   naming its language and a copy button (`components/code-block.tsx`). In a
+   `console` block, put a `$ ` prompt before each command, so that copying
+   picks up only the commands and not their output. The body is MDX, not plain
    Markdown: a bare `{` or `<` in prose is parsed as JavaScript or JSX, so
    escape it (`\{`, `\<`) or put it in a code span. Plain HTML elements such
    as `<kbd>` work. Importing project components from MDX is not set up. To

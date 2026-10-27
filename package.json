@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@content-collections/mdx": "^0.2.2",
+    "@shikijs/rehype": "^4.5.0",
     "github-slugger": "^2.0.0",
     "lucide-react": "^1.57.0",
     "mdast-util-from-markdown": "^2.1.0",

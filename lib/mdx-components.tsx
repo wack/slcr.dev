@@ -1,5 +1,7 @@
 import { ArrowUpRight } from "lucide-react";
 import type { ComponentProps } from "react";
+import { CodeBlock } from "@/components/code-block";
+import { LinkedHeading } from "@/components/heading-link";
 
 // Absolute http(s) URLs to any host other than this site. Relative links,
 // anchors, and mailto: links are on-site.
@@ -42,7 +44,8 @@ function MdxLink({ href, children, ...props }: ComponentProps<"a">) {
 // `components` prop of <MDXContent>.
 export const mdxComponents = {
   a: MdxLink,
-  // Code blocks can overflow sideways; focusable so keyboard users can
-  // scroll them (WCAG 2.1.1).
-  pre: (props: ComponentProps<"pre">) => <pre tabIndex={0} {...props} />,
+  h2: (props: ComponentProps<"h2">) => <LinkedHeading as="h2" {...props} />,
+  h3: (props: ComponentProps<"h3">) => <LinkedHeading as="h3" {...props} />,
+  h4: (props: ComponentProps<"h4">) => <LinkedHeading as="h4" {...props} />,
+  pre: CodeBlock,
 };
