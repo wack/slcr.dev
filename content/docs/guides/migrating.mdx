@@ -1,7 +1,184 @@
 ---
 title: Migrating existing documents
-description: Convert an existing requirements document to SLCR.
+description: Convert an existing requirements document to SLCR with a coding agent, then review and verify the result.
 order: 31
 ---
 
-_Placeholder: a migration checklist._
+This guide uses a coding agent to convert an existing requirements document,
+such as a PRD, a functional spec, or a Markdown requirements file, into an
+SLCR specification. The agent does the conversion. Your job is to give it
+the source, set the rules, and review what it produces.
+
+The conversion runs in two passes, the same way new specs are written:
+first the structure and requirements, then acceptance criteria. Reviewing
+after each pass is easier than reviewing everything at once.
+
+## Before you start
+
+- Install the `slcr` CLI and the agent skill. The skill teaches the agent the
+  format and the CLI:
+
+  ```bash
+  npx skills add wack/slcr
+  ```
+
+- Put the source document where the agent can read it, ideally as Markdown or
+  plain text in the repository. Export documents from tools such as Google
+  Docs or Notion first. Tables and numbered lists convert more reliably than
+  screenshots or diagrams.
+- Decide whether to migrate the whole document or one area at a time. For a
+  long document, migrate one top-level area per session, into the same spec.
+  Each session reviews more easily, and the result stays one spec.
+
+## Create the spec
+
+Run `slcr init` from the repository root, naming the spec after what it
+describes:
+
+```bash
+slcr init --name todo-api --title "TodoList API"
+```
+
+This creates `SPEC.slcr.toml` with an empty root section and glossary, and
+`SLCR.toml` if the repository doesn't have one yet.
+
+## Pass 1: structure and requirements
+
+Give the agent a prompt like this one, adjusted for your document:
+
+```text
+Convert docs/requirements.md into the SLCR spec SPEC.slcr.toml. Use the slcr
+skill. In this pass, add sections, requirements, links, and glossary terms,
+but no acceptance criteria.
+
+- Turn headings into sections. Put background prose in the section's body.
+- Turn each requirement statement into a requirement with one testable
+  statement. Split statements that combine several behaviors, and link the
+  parts to a parent with refines and refinement AND or OR.
+- Keep each original requirement ID at the start of its title, as in
+  "FR-12: POST creates an item".
+- Use the modality the source states. Where the source is ambiguous ("will",
+  "needs to", "ideally"), choose one and list the requirement for me to
+  confirm.
+- Put the reason for a requirement in rationale.
+- Add dependsOn wherever a requirement needs another requirement or section
+  to be understood.
+- Add glossary terms for domain vocabulary, and link them with usesTerm.
+- Don't put open questions, implementation notes, or decisions still under
+  discussion into the spec. List them for me instead.
+
+Run slcr vet after each section and fix everything it reports. When you're
+done, list every source requirement you couldn't map, every modality you
+chose, and every statement you split.
+```
+
+The final list from the agent is the starting point for your review.
+
+### Where source content goes
+
+| In the source | In the spec |
+| --- | --- |
+| Headings and their introductory prose | Sections, with the prose in `body` |
+| "Shall", "must", "should", and "may" statements | Requirements, with a matching `modality` |
+| Reasons and justifications | A requirement's `rationale` |
+| Definitions and glossary entries | Terms, linked with `usesTerm` |
+| Cross-references ("see section 4") | `dependsOn` links |
+| Original requirement IDs | The start of the requirement's `title` |
+| Open questions, implementation notes, and undecided items | Outside the spec, in the issue tracker or a separate document |
+
+### Legacy IDs
+
+The original IDs stay in titles, so people can match each requirement to the
+source document, and to any tickets or tests that cite the old ID. In YAML,
+quote titles that contain a colon:
+
+```yaml
+- kind: requirement
+  id: REQ-002
+  title: "FR-12: POST creates an item"
+  body: The endpoint MUST accept POST to create an item.
+  modality: MUST
+```
+
+Every requirement still gets a new SLCR ID. Validators and links use the
+SLCR ID, never the legacy one. To find a requirement by its old ID:
+
+```bash
+slcr query "MATCH (r:Requirement) WHERE r.title STARTS WITH 'FR-12:' RETURN r.id, r.title"
+```
+
+A source requirement that was split into several SLCR requirements keeps
+its legacy ID on the parent, and its parts get new titles.
+
+## Review pass 1
+
+1. **Confirm the spec is valid.** `slcr vet` should report no errors. Treat
+   any `modality-not-stated` warning as a statement to reword.
+2. **Confirm nothing was lost.** List every requirement that carries a legacy
+   ID, and compare it against the source document:
+
+   ```bash
+   slcr query "MATCH (r:Requirement) WHERE r.title STARTS WITH 'FR-' RETURN r.title ORDER BY r.title" --format tsv
+   ```
+
+   Then list the requirements without one. Each should be a part of a split
+   statement or a parent the agent added, never an invented requirement:
+
+   ```bash
+   slcr query "MATCH (r:Requirement) WHERE NOT r.title STARTS WITH 'FR-' RETURN r.id, r.title"
+   ```
+
+   Adjust the `'FR-'` prefix to match your source document's IDs.
+3. **Read the rendering against the source.** Run `slcr render` and read
+   `SPEC.md` beside the original. Check modalities, `AND` versus `OR`, and
+   anything the agent listed for you to confirm.
+4. **Read a few slices.** Pick requirements from different areas and run
+   `slcr slice REQ-ID`. Each slice should contain what an implementer needs.
+   A missing piece of context usually means a missing `dependsOn` link or
+   background in the wrong section. See
+   [Writing Requirements](/docs/guides/writing-requirements).
+
+Fix problems in the spec, either directly or by asking the agent, then
+commit.
+
+## Pass 2: acceptance criteria
+
+Once the requirements are reviewed, have the agent add acceptance criteria:
+
+```text
+Add acceptance criteria to the requirements in SPEC.slcr.toml, using the
+slcr skill. Work one requirement at a time, starting from its slice
+(slcr slice REQ-ID). Use acceptance criteria from the source document where
+they exist. Describe behavior only, without naming files or functions. Skip
+requirements the source gives too little detail for, and list them for me.
+Run slcr vet when you're done.
+```
+
+Review the criteria the same way: render, read them against the source, and
+resolve the requirements the agent listed.
+
+## Connect existing tests
+
+If the code already exists, ask the agent to connect existing tests to the
+requirements they verify:
+
+```text
+For each requirement in SPEC.slcr.toml, find existing tests that verify it,
+and add validators for them, using the slcr skill. Don't write new tests.
+Declare any tool you need with slcr tools add. Run slcr check when you're
+done, and list the requirements that have no validator.
+```
+
+Requirements without validators are reported as unknown, not as failures,
+so the build doesn't break while coverage grows. See
+[Add a Validator Tool](/docs/guides/add-a-validator-tool) for declaring
+tools, and [Run SLCR in CI](/docs/guides/run-in-ci) to check the spec on
+every change.
+
+## Retire the original document
+
+Once the spec is reviewed, the spec is the source of truth, and keeping the
+original up to date as well invites the two to drift apart. Replace the
+original with a pointer to the rendered `SPEC.md`, or archive it as
+read-only with a note that it's no longer maintained. The legacy IDs in
+titles keep old references traceable after the original is retired.
