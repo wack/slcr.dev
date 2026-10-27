@@ -16,7 +16,8 @@ The path from a requirement to a result has five parts:
 
 1. A **requirement** states what must hold.
 2. Its **acceptance criteria** describe what "done" looks like.
-3. **Validators** name a requirement or criterion and the tool that checks it.
+3. **Validators** each name a requirement, optionally one of its criteria,
+   and the tool that checks it.
 4. A **tool descriptor** describes how to run that tool.
 5. `slcr check` runs the tools and reports which requirements are satisfied.
 
@@ -116,7 +117,8 @@ additionalProperties = false
 properties.test = { type = "string", minLength = 1 }
 
 [invoke]
-argv = ["cargo", "nextest", "run", "--no-tests=fail", "-E", "test(={with.test})"]
+argv = ["cargo", "nextest", "run", "--no-fail-fast", "--no-tests=fail",
+        "-E", "test(={with.test})"]
 cwd = { nearest = "Cargo.toml" }
 
 [results]

@@ -15,12 +15,14 @@ up SLCR in an existing project instead, see the
 
 ## 1. Install `slcr`
 
-SLCR hasn't had its first release yet, so install the CLI from source. This
-requires [Rust](https://rustup.rs) and takes a few minutes to build:
+Install the CLI with Homebrew:
 
 ```bash
-cargo install --git https://github.com/wack/slcr --locked
+brew install wack/tap/slcr
 ```
+
+For other ways to install, see
+[Installation](/docs/getting-started/installation).
 
 Check that it worked:
 
@@ -109,7 +111,9 @@ SPEC.slcr.yaml: ok
 
 ## 4. Render the spec
 
-Generate a readable document from the spec:
+Generate a readable document from the spec. Commands that read one
+specification, such as `render` and `slice`, read `SPEC.slcr.toml` unless you
+name a file, so name the YAML file:
 
 ```console
 $ slcr render SPEC.slcr.yaml
@@ -207,7 +211,8 @@ greeter: 0 satisfied, 3 unsatisfied, 0 unknown
 ```
 
 Both parts are unsatisfied, so `REQ-001` is too. Because all three are
-`MUST` requirements, `check` fails and lists each one as a violation.
+`MUST` requirements, each one is a violation, and `check` fails. The details
+of each violation follow on stderr, after the lines shown here.
 Seeing every validator fail first confirms that each can tell the difference.
 
 ## 9. Implement the script
@@ -262,4 +267,4 @@ You now have a project where:
   [Add a validator tool](/docs/guides/add-a-validator-tool).
 - Check every change automatically with [Run SLCR in CI](/docs/guides/run-in-ci).
 - Let a coding agent work this way with the
-  [agent skill](/docs/faq#how-do-i-use-slcr-with-a-coding-agent).
+  [agent skill](/docs/getting-started/installation#install-the-agent-skill).

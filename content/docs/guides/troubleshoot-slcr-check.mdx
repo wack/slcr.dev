@@ -26,7 +26,7 @@ location in the file.
 
 | Finding | Fix |
 | --- | --- |
-| Descriptor not installed | Run `slcr tools install`. Common on a fresh clone or a new CI runner. |
+| `descriptor-not-installed` | Run `slcr tools install`. Common on a fresh clone or a new CI runner. |
 | `dangling-reference` | A link names an ID that doesn't exist. Correct the ID or add the node. |
 | `duplicate-id` | Give the newer node the next unused ID. |
 | `cycle` | Remove one of the `refines` or `dependsOn` links the finding lists. |
@@ -82,21 +82,31 @@ when more than one refiner is satisfied.
 
 ## A requirement is unknown
 
-No validator covers it yet. The summary line counts these as coverage gaps:
+Nothing decides it yet. There are three causes:
 
-```console
-shop: 6 satisfied, 0 unsatisfied, 1 unknown (1 coverage gap)
-```
+- **It has no validators, and nothing refines it.** The summary line counts
+  these as coverage gaps:
 
-A coverage gap never fails `check`.
-To close it, add a validator for the requirement. See
-[Add a validator tool](/docs/guides/add-a-validator-tool) for writing one.
+  ```console
+  shop: 6 satisfied, 0 unsatisfied, 1 unknown (1 coverage gap)
+  ```
+
+  A coverage gap never fails `check`. To close it, add a validator for the
+  requirement. See [Add a validator tool](/docs/guides/add-a-validator-tool)
+  for writing one.
+- **Its refiners don't decide it.** Some of its refiners are unknown, and
+  their results could still change its own. Find the refiners with the query
+  in the previous section, and close their gaps.
+- **One of its validators could not be run.** This also fails `check`. See
+  [A validator could not be run](#a-validator-could-not-be-run).
 
 ## A failure was absorbed
 
-A validator failed, but every requirement it refines is still satisfied,
-usually because another branch of an `OR` passed. `check` reports it as a
-warning, which fails only with `--deny-warnings`.
+A requirement is unsatisfied, but every requirement it refines is still
+satisfied, usually because another branch of an `OR` passed. `check` reports
+the failure as a warning, which fails only with `--deny-warnings`. If the
+unsatisfied requirement is a `MAY`, the failure is informational and never
+fails `check`.
 
 ## `check` passed locally but fails in CI
 

@@ -118,7 +118,8 @@ hash of the descriptor's exact bytes. Any change to a descriptor, including
 whitespace, requires a new pin, made with `slcr tools update`.
 
 Installed descriptors are stored on each machine under the platform's data
-directory (`$XDG_DATA_HOME/slcr` on Linux), filed by pin. Projects that pin
+directory (on Linux, `$XDG_DATA_HOME/slcr`, or `~/.local/share/slcr` if
+`XDG_DATA_HOME` isn't set), filed by pin. Projects that pin
 the same bytes share one stored file. SLCR checks a stored descriptor
 against its pin before every use and replaces one that doesn't match when
 installing.
