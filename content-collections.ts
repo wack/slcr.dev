@@ -1,5 +1,6 @@
 import { defineCollection, defineConfig } from "@content-collections/core";
-import { compileMDX } from "@content-collections/mdx";
+import { compileMDX, type Options } from "@content-collections/mdx";
+import rehypeShiki, { type RehypeShikiOptions } from "@shikijs/rehype";
 import remarkGfm from "remark-gfm";
 import { z } from "zod";
 import { extractToc, remarkHeadingIds } from "./lib/headings";
@@ -7,7 +8,31 @@ import { extractToc, remarkHeadingIds } from "./lib/headings";
 // GitHub-flavored Markdown (tables, autolinks, strikethrough, task lists) for
 // every collection.
 // Headings get GitHub-style IDs so they can be linked to (see lib/headings.ts).
-const mdxOptions = { remarkPlugins: [remarkGfm, remarkHeadingIds] };
+// Fenced code blocks are syntax-highlighted by Shiki at build time, so no
+// highlighter ships to the browser. The language comes from the fence
+// (```toml); fences without one, or with one Shiki doesn't know, stay plain.
+const mdxOptions: Options = {
+  remarkPlugins: [remarkGfm, remarkHeadingIds],
+  rehypePlugins: [
+    [
+      rehypeShiki,
+      {
+        theme: "github-dark-default",
+        defaultLanguage: "text",
+        fallbackLanguage: "text",
+        transformers: [
+          {
+            // Record the fence's language for the code block header
+            // (components/code-block.tsx).
+            pre(node) {
+              node.properties["data-language"] = this.options.lang;
+            },
+          },
+        ],
+      } satisfies RehypeShikiOptions,
+    ],
+  ],
+};
 
 const docs = defineCollection({
   name: "docs",

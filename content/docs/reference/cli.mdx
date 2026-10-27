@@ -38,7 +38,7 @@ specification that fails vetting is rejected.
 
 Create a specification with its root and glossary sections.
 
-```
+```text
 slcr init [OPTIONS] [FILE]
 ```
 
@@ -59,7 +59,7 @@ both files or neither.
 Report the rules that specifications and validator files break, without
 running anything.
 
-```
+```text
 slcr vet [OPTIONS] [FILE]...
 ```
 
@@ -76,7 +76,7 @@ descriptor store is an error; `slcr tools install` fixes it.
 
 Run every validator and report whether the requirements are satisfied.
 
-```
+```text
 slcr check [OPTIONS]
 ```
 
@@ -115,7 +115,7 @@ repositories you trust, as you would a test suite.
 
 Render a specification as Markdown.
 
-```
+```text
 slcr render [OPTIONS] [FILE]
 ```
 
@@ -132,7 +132,7 @@ render.
 
 Print the slice for one requirement to stdout, as Markdown.
 
-```
+```text
 slcr slice [OPTIONS] <REQUIREMENT> [FILE]
 ```
 
@@ -144,7 +144,7 @@ slcr slice [OPTIONS] <REQUIREMENT> [FILE]
 
 Run a read-only GQL query over a specification.
 
-```
+```text
 slcr query [OPTIONS] <QUERY> [FILE]
 ```
 
