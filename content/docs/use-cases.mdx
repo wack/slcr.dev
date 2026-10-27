@@ -57,7 +57,7 @@ slcr check --format json | jq -r '.specs[] | .name as $n | .coverageGaps[] | "\(
 Because results follow `refines` links, progress rolls up: a parent
 requirement becomes satisfied when its parts are, as its `AND`, `OR`, or
 `XOR` specifies. See
-[Links and Satisfaction](/docs/concepts/links-and-satisfaction).
+[Links and satisfaction](/docs/concepts/links-and-satisfaction).
 
 ## Keeping code and spec in step in CI
 
@@ -138,7 +138,7 @@ The validator goes red when the rule finds a database call in a view, and
 `slcr check` reports a `MUST NOT` violation. Layering rules, banned APIs,
 required registrations, and configuration checks work the same way. When no
 existing tool fits, a short script committed to the repository can serve as
-the tool. See [Add a Validator Tool](/docs/guides/add-a-validator-tool).
+the tool. See [Add a validator tool](/docs/guides/add-a-validator-tool).
 
 ## Bringing a codebase under a spec
 
@@ -150,7 +150,7 @@ with validators pointing at existing tests. Requirements without validators
 are reported as unknown, which shows the gaps in coverage without failing
 the build. This allows adopting SLCR one area at a time. To convert an
 existing requirements document, see
-[Migrating Existing Documents](/docs/guides/migrating).
+[Migrating existing documents](/docs/guides/migrating).
 
 **Several specs.** A project's `SLCR.toml` lists every spec it holds, such as
 one spec per service:
