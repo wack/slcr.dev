@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Spline_Sans, Unbounded } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </div>
         <SiteFooter />
         <ScrollReveal />
+        <Analytics />
       </body>
     </html>
   );
