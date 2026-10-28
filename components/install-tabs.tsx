@@ -1,27 +1,42 @@
 "use client";
 
 import { Check, Copy } from "lucide-react";
-import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
+import {
+  type KeyboardEvent,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
-const options = [
-  {
-    label: "Prompt",
-    command:
-      "Set up SLCR requirements for this project by following https://slcr.dev/docs/getting-started/quickstart",
-    mono: false,
-  },
-  {
-    label: "CLI",
-    command: "cargo install --git https://github.com/wack/slcr --locked",
-    mono: true,
-  },
-  { label: "Skill", command: "npx skills add wack/slcr", mono: true },
-];
+const brew = "brew install wack/tap/slcr";
+const shellInstaller =
+  "curl --proto '=https' --tlsv1.2 -LsSf https://github.com/wack/slcr/releases/latest/download/slcr-installer.sh | sh";
+
+// The OS never changes during a visit, so there is nothing to subscribe to.
+const subscribe = () => () => {};
+const isMac = () => /Macintosh|Mac OS X/.test(navigator.userAgent);
+// The prerendered HTML can't know the visitor's OS, so it uses the shell
+// installer, which works on macOS and Linux alike.
+const isMacOnServer = () => false;
 
 // Tabs of copy-paste commands, one per way to get started. Follows the WAI-ARIA
 // tabs pattern: arrow keys, Home, and End move between tabs, and Tab moves on
 // to the copy button. The copy result is announced through a live region.
 export function InstallTabs() {
+  const mac = useSyncExternalStore(subscribe, isMac, isMacOnServer);
+  const options = [
+    {
+      label: "Prompt",
+      command:
+        "Set up SLCR requirements for this project by following https://slcr.dev/docs/getting-started/quickstart",
+      mono: false,
+    },
+    { label: "CLI", command: mac ? brew : shellInstaller, mono: true },
+    { label: "Skill", command: "npx skills add wack/slcr", mono: true },
+  ];
+
   const id = useId();
   const [selected, setSelected] = useState(0);
   const [status, setStatus] = useState<"idle" | "copied" | "failed">("idle");
