@@ -1,0 +1,168 @@
+---
+title: Query a specification
+description: Use `slcr query` to find requirements, see what a change will affect, review a spec's shape, and feed results to scripts.
+order: 35
+---
+
+`slcr query` runs a read-only query over a specification and prints the
+results as a table. This guide collects queries for common tasks. The
+examples use the `todo-api` spec from the Concepts pages. Adapt the IDs,
+titles, and words to your own spec.
+
+## Before you start
+
+Queries use GQL, a standard graph query language that reads much like
+Cypher. Each query `MATCH`es a pattern of nodes and links, optionally
+filters it with `WHERE`, and `RETURN`s the values to print. Node labels,
+properties, and link names are listed under
+[`slcr query` in the CLI reference](/docs/reference/cli#slcr-query).
+
+Pass the query as one argument, in double quotes. `slcr query` reads
+`SPEC.slcr.toml`. To query another file, name it after the query:
+
+```bash
+slcr query "MATCH (r:Requirement) RETURN r.id, r.title" services/billing/SPEC.slcr.yaml
+```
+
+## Find a requirement
+
+Use these when you know something about a requirement and need its ID or
+details.
+
+**By ID:**
+
+```console
+$ slcr query "MATCH (n {id: 'REQ-005'}) RETURN n.title, n.body"
+n.title                  n.body
+-----------------------  --------------------------------------------
+TodoListItem controller  There MUST be a controller for TodoListItem.
+(1 row)
+```
+
+**By a word in its statement.** `lower` makes the match case-insensitive:
+
+```bash
+slcr query "MATCH (r:Requirement) WHERE lower(r.body) CONTAINS 'authenticat' RETURN r.id, r.title"
+```
+
+**By a glossary term it uses:**
+
+```bash
+slcr query "MATCH (n)-[:USES_TERM]->(t:Term {title: 'TodoListItem'}) RETURN n.id, n.title"
+```
+
+## See what a change will affect
+
+Run these before changing or removing a requirement. In each one, the `+`
+after a link follows it any number of steps, and `DISTINCT` lists each
+result once. Remove the `+` to see only direct links.
+
+**Requirements that depend on it:**
+
+```console
+$ slcr query "MATCH (r)-[:DEPENDS_ON]->+(t {id: 'REQ-007'}) RETURN DISTINCT r.id, r.title"
+r.id     r.title
+-------  -----------------------
+REQ-005  TodoListItem controller
+(1 row)
+```
+
+**Larger requirements whose status it contributes to:**
+
+```bash
+slcr query "MATCH (r {id: 'REQ-004'})-[:REFINES]->+(p) RETURN DISTINCT p.id, p.title"
+```
+
+**Requirements that contribute to its status:**
+
+```bash
+slcr query "MATCH (c:Requirement)-[:REFINES]->+(p {id: 'REQ-001'}) RETURN DISTINCT c.id, c.title"
+```
+
+## Review a spec's shape
+
+Use these to get an overview of a spec, for example before a review.
+
+**How many requirements have each modality:**
+
+```console
+$ slcr query "MATCH (r:Requirement) RETURN r.modality, count(*) AS requirements ORDER BY requirements DESC"
+r.modality  requirements
+----------  ------------
+MUST        8
+MAY         2
+(2 rows)
+```
+
+**Every requirement with a given modality:**
+
+```bash
+slcr query "MATCH (r:Requirement) WHERE r.modality = 'MUST' RETURN r.id, r.title ORDER BY r.id"
+```
+
+**What a section contains, in document order:**
+
+```bash
+slcr query "MATCH (s:Section {id: 'SEC-001'})-[e:CONTAINS]->(c) RETURN c.id, c.title ORDER BY e.position"
+```
+
+**A requirement's acceptance criteria, in order:**
+
+```bash
+slcr query "MATCH (r {id: 'REQ-007'})-[e:HAS_CRITERION]->(ac) RETURN ac.id, ac.title ORDER BY e.position"
+```
+
+## Find what's missing
+
+Queries can't test for something that's absent, such as a requirement
+without acceptance criteria. Instead, list the requirements that have it, and
+compare against the full list. `tail -n +2` drops the header line, and
+`comm -23` prints the IDs that appear only in the first list:
+
+```bash
+slcr query "MATCH (r:Requirement) RETURN r.id ORDER BY r.id" --format tsv | tail -n +2 > all.txt
+slcr query "MATCH (r:Requirement)-[:HAS_CRITERION]->() RETURN DISTINCT r.id ORDER BY r.id" --format tsv | tail -n +2 > with-criteria.txt
+comm -23 all.txt with-criteria.txt
+```
+
+To see which requirements are satisfied, unsatisfied, or not yet covered by
+a validator, use `slcr check --format json`. Satisfaction comes from
+running validators, so queries can't report it.
+
+## Use query results in scripts
+
+**Pass values as parameters** instead of building query strings. Write
+`$name` in the query, and bind it with `--param`. The value is JSON, so a
+string needs double quotes inside the shell's single quotes:
+
+```bash
+slcr query 'MATCH (n {id: $id}) RETURN n.id, n.title' --param 'id="REQ-002"'
+```
+
+Repeat `--param` for each parameter.
+
+**Read plain rows** with `--format tsv`, which prints a header line, then
+one tab-separated row per result:
+
+```bash
+slcr query "MATCH (r:Requirement) WHERE r.modality = 'MUST' RETURN r.id" --format tsv | tail -n +2
+```
+
+**Read structured output** with `--format json`, which prints an object with
+`columns` and `rows`:
+
+```console
+$ slcr query "MATCH (n {id: 'REQ-002'}) RETURN n.id, n.title" --format json
+{
+  "columns": ["n.id", "n.title"],
+  "rows": [["REQ-002", "POST creates an item"]]
+}
+```
+
+## If a query fails
+
+A query that uses a GQL feature `slcr` doesn't support fails with an error
+pointing at the unsupported part. The
+[SLCR query profile](https://github.com/wack/gql-rust/blob/trunk/PROFILE.md)
+lists what's supported. Queries read one specification at a time, and they
+can't change it.
