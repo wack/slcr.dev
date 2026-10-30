@@ -90,8 +90,18 @@ How you update depends on how you installed:
 
 ## Install in CI
 
-In CI, install the CLI into a known directory without changing any shell
-profile, and without the updater:
+On GitHub Actions, use the [SLCR GitHub Action](https://github.com/wack/slcr-action),
+which installs and caches `slcr` and runs it. To only install `slcr` and run
+it yourself in later steps, set `command: none`:
+
+```yaml
+- uses: wack/slcr-action@v1
+  with:
+    command: none
+```
+
+On other CI systems, install the CLI into a known directory, without
+changing any shell profile and without the updater:
 
 ```bash
 curl --proto '=https' --tlsv1.2 -LsSf https://github.com/wack/slcr/releases/download/v0.1.0/slcr-installer.sh \

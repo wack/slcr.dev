@@ -1,15 +1,82 @@
 ---
 title: Run SLCR in CI
-description: Check a project's specifications, rendering, and validators on every change.
+description: Check a project's specifications, rendering, and validators on every change, with the SLCR GitHub Action or any CI system.
 order: 33
 ---
 
 This guide sets up CI to fail when a specification is malformed, when the
 committed rendering is out of date, or when a requirement isn't satisfied.
 
-## The commands
+## GitHub Actions
 
-Run these from anywhere in the project:
+Use the [SLCR GitHub Action](https://github.com/wack/slcr-action). It
+installs `slcr`, caches it, and runs one command per step:
+
+```yaml
+# .github/workflows/slcr.yml
+name: SLCR
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  slcr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Install every program your validators run. This example uses cargo-nextest.
+      - uses: taiki-e/install-action@cargo-nextest
+
+      - name: Specs are well formed
+        uses: wack/slcr-action@v1
+        with:
+          command: vet
+          deny-warnings: true
+
+      - name: SPEC.md is up to date
+        if: ${{ !cancelled() }}
+        uses: wack/slcr-action@v1
+        with:
+          command: render
+
+      - name: Requirements are satisfied
+        if: ${{ !cancelled() }}
+        uses: wack/slcr-action@v1
+        with:
+          command: check
+          deny-warnings: true
+```
+
+- **Each step runs one command.** `vet` installs the project's tool
+  descriptors first, `render` checks that the committed Markdown matches the
+  spec, and `check` runs every validator. Only the first step downloads
+  `slcr`. Later steps reuse it.
+- **`if: ${{ !cancelled() }}`** runs each check even when an earlier one
+  fails, so one failure doesn't hide another.
+- **Remove the render step** if the project doesn't commit its rendered
+  Markdown, and remove `deny-warnings` if warnings, such as unsatisfied
+  `SHOULD` requirements, shouldn't fail the build.
+- **Pin the `slcr` version** for reproducible builds by adding
+  `version: 0.1.0` to each step. By default, the action installs the latest
+  release.
+
+Each step's output appears in the job summary, and a failure adds an error
+annotation to the run. The
+[action's README](https://github.com/wack/slcr-action#readme) lists every
+input and output, with examples for projects in a subdirectory, several
+specs, self-hosted runners, and job containers.
+
+## Other CI systems
+
+Install `slcr` in CI with the shell installer, as described in
+[Installation](/docs/getting-started/installation#install-in-ci). Then run
+these commands from anywhere in the project:
 
 ```bash
 slcr tools install                    # install pinned descriptors
@@ -18,84 +85,40 @@ slcr render --expect-no-diff          # the committed SPEC.md matches the spec
 slcr check --offline --deny-warnings  # every requirement is satisfied
 ```
 
+Each command exits `1` on failure, which fails the CI step. Configure the CI
+system to run every command even after one fails, so one failure doesn't
+hide another.
+
 - Drop `slcr render --expect-no-diff` if the project doesn't commit its
   rendered Markdown.
-- Drop `--deny-warnings` if warnings, such as unsatisfied `SHOULD`
-  requirements, shouldn't fail the build.
+- Drop `--deny-warnings` if warnings shouldn't fail the build.
 - `slcr check` installs missing descriptors itself. Running
   `slcr tools install` first, then `check --offline`, keeps network failures
   separate from check failures.
 
-Each command exits `1` on failure, which fails the CI step.
-
-## GitHub Actions
-
-```yaml
-# .github/workflows/slcr.yml
-name: SLCR
-on: [push, pull_request]
-
-jobs:
-  slcr:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Install slcr
-        run: |
-          curl --proto '=https' --tlsv1.2 -LsSf https://github.com/wack/slcr/releases/download/v0.1.0/slcr-installer.sh \
-            | SLCR_UNMANAGED_INSTALL="$HOME/.local/bin" sh
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
-      # Install every program your validators run. This example uses cargo-nextest.
-      - name: Install validator tools
-        run: cargo install cargo-nextest --locked
-
-      - name: Install descriptors
-        run: slcr tools install
-
-      - name: Specs are well formed
-        run: slcr vet --deny-warnings
-
-      - name: SPEC.md is up to date
-        if: ${{ !cancelled() }}
-        run: slcr render --expect-no-diff
-
-      - name: Requirements are satisfied
-        if: ${{ !cancelled() }}
-        run: slcr check --offline --deny-warnings
-```
-
-The install step pins a specific release, so CI changes versions only when
-you update the URL. See
-[Installation](/docs/getting-started/installation#install-in-ci) for what
-`SLCR_UNMANAGED_INSTALL` does.
-
-The `if: ${{ !cancelled() }}` conditions run each check even when an earlier
-one fails, so one failure doesn't hide another.
-
 ## Install the programs validators run
 
 `slcr` runs the programs named in each tool descriptor, looked up on `PATH`.
-CI must install them, the same as for running tests. If one is missing,
-`slcr check` reports the validator as "could not be run" and fails.
+CI must install them before `check`, the same as for running tests. The
+GitHub Action doesn't install them either. If one is missing, `slcr check`
+reports the validator as "could not be run" and fails.
 
 ## Optional: cache the descriptor store
 
 Descriptors are installed under `~/.local/share/slcr` on Linux, or
 `$XDG_DATA_HOME/slcr` if that's set. Caching this directory avoids fetching
-descriptors on each run:
+descriptors on each run. On GitHub Actions, add this before the first SLCR
+step:
 
 ```yaml
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/.local/share/slcr
           key: slcr-descriptors-${{ hashFiles('SLCR.toml') }}
 ```
 
-Add it before the "Install descriptors" step. A stale cache is safe:
-descriptors are stored by pin, and `slcr` checks each one against its pin
-before use.
+A stale cache is safe: descriptors are stored by pin, and `slcr` checks each
+one against its pin before use.
 
 ## Reproduce a failure locally
 
