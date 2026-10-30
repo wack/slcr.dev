@@ -1,11 +1,16 @@
 ---
 title: CLI
-description: Every slcr command, its arguments and options, and its exit codes.
+metaTitle: "`slcr` CLI reference"
+description: Every `slcr` command, from `init` and `check` to `slice` and `render`, with its arguments, options, and exit codes.
 order: 44
 ---
 
 `slcr` is the reference command-line tool for SLCR. Run `slcr <command>
---help` for the same information from the tool itself.
+--help` for the same information from the tool itself. The files it reads
+are defined in the [Specification](/docs/reference/specification),
+[Project manifest](/docs/reference/project-manifest),
+[Validator files](/docs/reference/validator-files), and
+[Tool descriptors](/docs/reference/tool-descriptors) references.
 
 ## Global options
 
@@ -49,7 +54,7 @@ slcr init [OPTIONS] [FILE]
 | `--title <TITLE>` | The root section's title. Default: the specification's name. |
 
 If the working directory isn't inside a project, `init` also creates
-`SLCR.toml`, listing the new file in `specs`. Inside an existing project,
+[`SLCR.toml`](/docs/reference/project-manifest), listing the new file in `specs`. Inside an existing project,
 the manifest is left unchanged, and `init` warns if the manifest's `specs`
 don't match the new file. `init` never overwrites a file and creates either
 both files or neither.
@@ -74,7 +79,8 @@ descriptor store is an error; `slcr tools install` fixes it.
 
 ## `slcr check`
 
-Run every validator and report whether the requirements are satisfied.
+Run every [validator](/docs/concepts/validators) and report whether the
+requirements are [satisfied](/docs/concepts/links-and-satisfaction#satisfaction).
 
 ```text
 slcr check [OPTIONS]
@@ -103,13 +109,18 @@ shop: 6 satisfied, 1 unsatisfied, 0 unknown
 ```
 
 `check` fails when vetting fails, when a validator can't be run, or when an
-unsatisfied `MUST` or `MUST NOT` requirement isn't absorbed. Unknown
+unsatisfied `MUST` or `MUST NOT` requirement isn't
+[absorbed](/docs/concepts/links-and-satisfaction#modality-sets-severity). Unknown
 requirements and unsatisfied `MAY` requirements never fail it. The human
 format prints the end of each red validator's output. The JSON format
 includes each validator's full output.
 
 `check` runs the commands the project's descriptors declare. Run it only in
 repositories you trust, as you would a test suite.
+
+To diagnose a failure, see
+[Troubleshoot `slcr check`](/docs/guides/troubleshoot-slcr-check). To run
+`check` on every change, see [Run SLCR in CI](/docs/guides/run-in-ci).
 
 ## `slcr render`
 
@@ -130,7 +141,7 @@ render.
 
 ## `slcr slice`
 
-Print the slice for one requirement to stdout, as Markdown.
+Print the [slice](/docs/concepts/slices) for one requirement to stdout, as Markdown.
 
 ```text
 slcr slice [OPTIONS] <REQUIREMENT> [FILE]
@@ -142,7 +153,8 @@ slcr slice [OPTIONS] <REQUIREMENT> [FILE]
 
 ## `slcr query`
 
-Run a read-only GQL query over a specification.
+Run a read-only GQL query over a specification. For examples, see
+[Querying a spec](/docs/concepts/specifications#querying-a-spec).
 
 ```text
 slcr query [OPTIONS] <QUERY> [FILE]
@@ -178,7 +190,8 @@ And these edge labels:
 
 ## `slcr tools`
 
-Declare and inspect the tools validators run. Every `tools` subcommand
+Declare and inspect the [tools](/docs/concepts/validators#tools-and-descriptors)
+validators run. Every `tools` subcommand
 requires a project.
 
 | Command | Effect |
@@ -191,7 +204,8 @@ requires a project.
 | `slcr tools show <NAME> [--format human\|json]` | Print a declared tool's installed descriptor, including the schema its validators' `with` must satisfy. |
 
 `add`, `update`, and `remove` edit `SLCR.toml` in place, keeping the rest of
-the file unchanged.
+the file unchanged. For a walkthrough, see
+[Add a validator tool](/docs/guides/add-a-validator-tool).
 
 ## `slcr version`
 

@@ -4,6 +4,13 @@ import { Analytics } from "@vercel/analytics/next";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import {
+  sharedOpenGraph,
+  siteDescription,
+  siteName,
+  siteTitle,
+  siteUrl,
+} from "@/lib/metadata";
 import "./globals.css";
 
 // Headings. Exposed to Tailwind as `font-display` in globals.css.
@@ -23,13 +30,18 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Pages set their own canonical URL and Open Graph fields with
+// `pageMetadata` (lib/metadata.ts).
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
-    default: "SLCR",
-    template: "%s | SLCR",
+    default: siteTitle,
+    template: `%s | ${siteName}`,
   },
-  description:
-    "SLCR (Sliceable, Linked, Checkable Requirements) is an open standard for writing software requirements documents.",
+  description: siteDescription,
+  openGraph: sharedOpenGraph,
+  // X falls back to the og: tags for the title, description, and image.
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

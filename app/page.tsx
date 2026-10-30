@@ -1,4 +1,5 @@
 import { ArrowUpRight } from "lucide-react";
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { ButtonLink } from "@/components/button";
 import { InstallTabs } from "@/components/install-tabs";
@@ -10,6 +11,14 @@ import {
   SliceField,
 } from "@/components/decor";
 import { githubUrl } from "@/components/github-link";
+import { JsonLd } from "@/components/json-ld";
+import { pageMetadata, siteDescription } from "@/lib/metadata";
+import { homeJsonLd } from "@/lib/structured-data";
+
+export const metadata: Metadata = pageMetadata({
+  description: siteDescription,
+  path: "/",
+});
 
 const specHref = "/docs/reference/specification";
 
@@ -218,6 +227,7 @@ function CodeBlock({ code, label }: { code: string; label: string }) {
 export default function Home() {
   return (
     <main>
+      <JsonLd data={homeJsonLd} />
       <section className="relative overflow-hidden">
         <div className="bg-triangle-grid absolute inset-0 mask-b-from-50% mask-l-from-60%" />
         {/* Desktop: a field of slices bleeding off the right edge. */}

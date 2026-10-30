@@ -6,7 +6,7 @@ order: 22
 
 A **slice** is the part of a spec that one requirement needs: everything
 required to understand and implement that requirement, and nothing more.
-`slcr slice REQ-ID` prints it as Markdown that reads like a shortened version
+[`slcr slice REQ-ID`](/docs/reference/cli#slcr-slice) prints it as Markdown that reads like a shortened version
 of the rendered spec.
 
 Slices address context rot. An agent given a whole requirements document has
@@ -132,6 +132,8 @@ spec determines which slices include it:
 `slcr slice` shows exactly what an implementer will see, which makes gaps in
 a spec's structure visible. A missing piece of context usually indicates a
 missing link or misplaced background.
+[Writing requirements](/docs/guides/writing-requirements#structure-the-spec-so-it-slices-well)
+shows how to structure a spec so it slices well.
 
 Slices are useful to people too. A reviewer checking one change can read the
 slice of the requirement it implements instead of searching a long document

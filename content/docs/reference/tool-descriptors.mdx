@@ -113,9 +113,11 @@ Any other exit code, a signal, or a timeout means red.
 
 ## Pins and the descriptor store
 
-A project declares each descriptor in `SLCR.toml` with a pin: the BLAKE3
+A project declares each descriptor in
+[`SLCR.toml`](/docs/reference/project-manifest#tools) with a pin: the BLAKE3
 hash of the descriptor's exact bytes. Any change to a descriptor, including
-whitespace, requires a new pin, made with `slcr tools update`.
+whitespace, requires a new pin, made with
+[`slcr tools update`](/docs/reference/cli#slcr-tools).
 
 Installed descriptors are stored on each machine under the platform's data
 directory (on Linux, `$XDG_DATA_HOME/slcr`, or `~/.local/share/slcr` if

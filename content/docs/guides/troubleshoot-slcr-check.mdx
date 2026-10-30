@@ -1,6 +1,6 @@
 ---
 title: Troubleshoot `slcr check`
-description: What each `slcr check` failure means and how to resolve it.
+description: "What each `slcr check` failure means and how to fix it: vetting errors, red validators, unsatisfied or unknown requirements, and CI-only failures."
 order: 34
 ---
 
@@ -21,7 +21,7 @@ full output, run `slcr check --format json`.
 ## Vetting failed, and nothing ran
 
 `check` vets the project first and runs no validators if vetting fails. Run
-`slcr vet` for the full list of problems. Each finding is labeled at its
+[`slcr vet`](/docs/reference/cli#slcr-vet) for the full list of problems. Each finding is labeled at its
 location in the file.
 
 | Finding | Fix |
@@ -70,7 +70,8 @@ These are environment problems. Don't change product code to fix them.
 
 ## A requirement is unsatisfied, but its validators are green
 
-A parent's status comes from its refiners. Find the refiner that's
+A parent's status
+[comes from its refiners](/docs/concepts/links-and-satisfaction#satisfaction). Find the refiner that's
 unsatisfied:
 
 ```bash
@@ -103,7 +104,8 @@ Nothing decides it yet. There are three causes:
 ## A failure was absorbed
 
 A requirement is unsatisfied, but every requirement it refines is still
-satisfied, usually because another branch of an `OR` passed. `check` reports
+satisfied, usually because another branch of an
+[`OR`](/docs/concepts/links-and-satisfaction#combining-refinements) passed. `check` reports
 the failure as a warning, which fails only with `--deny-warnings`. If the
 unsatisfied requirement is a `MAY`, the failure is informational and never
 fails `check`.

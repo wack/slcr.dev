@@ -3,9 +3,13 @@ import { allDocs } from "content-collections";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Eyebrow } from "@/components/decor";
+import { DocPager } from "@/components/doc-pager";
 import { DocToc } from "@/components/doc-toc";
+import { JsonLd } from "@/components/json-ld";
 import { CodeSpans, plainText } from "@/components/code-spans";
-import { findDoc, getDocSections } from "@/lib/docs";
+import { docHref, findDoc, getDocSections } from "@/lib/docs";
+import { pageMetadata } from "@/lib/metadata";
+import { docBreadcrumbJsonLd } from "@/lib/structured-data";
 import { mdxComponents } from "@/lib/mdx-components";
 import { proseClasses } from "@/lib/styles";
 
@@ -25,10 +29,11 @@ export async function generateMetadata(
   if (!doc) {
     return {};
   }
-  return {
-    title: plainText(doc.title),
+  return pageMetadata({
+    title: plainText(doc.metaTitle ?? doc.title),
     description: plainText(doc.description),
-  };
+    path: docHref(doc),
+  });
 }
 
 export default async function DocPage(props: PageProps<"/docs/[...slug]">) {
@@ -46,6 +51,9 @@ export default async function DocPage(props: PageProps<"/docs/[...slug]">) {
   return (
     <div className="flex gap-10">
       <main className="min-w-0 max-w-3xl flex-1">
+        <JsonLd
+          data={docBreadcrumbJsonLd(plainText(doc.title), docHref(doc))}
+        />
         {section && <Eyebrow>{section.title}</Eyebrow>}
         <h1 className="mt-4 text-3xl">
           <CodeSpans text={doc.title} />
@@ -56,6 +64,7 @@ export default async function DocPage(props: PageProps<"/docs/[...slug]">) {
         <article className={`mt-10 ${proseClasses}`}>
           <MDXContent code={doc.mdx} components={mdxComponents} />
         </article>
+        <DocPager doc={doc} />
       </main>
       {/* Only at xl and up is there room beside the sidebar and the text. */}
       {showToc && (

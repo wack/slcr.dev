@@ -21,7 +21,7 @@ results combine into a status for each requirement.
 
 All four determine what goes into a [slice](/docs/concepts/slices).
 `refines` and `dependsOn` links can't form cycles, and every link must point
-to an ID that exists. `slcr vet` reports either problem as an error.
+to an ID that exists. [`slcr vet`](/docs/reference/cli#slcr-vet) reports either problem as an error.
 
 ### Nesting provides structure
 
@@ -90,7 +90,7 @@ on, so a slice can include their definitions.
 
 ## Satisfaction
 
-`slcr check` runs every validator, then assigns each requirement one of three
+`slcr check` runs every [validator](/docs/concepts/validators), then assigns each requirement one of three
 statuses:
 
 - **Satisfied**: its validators and refinements show that it holds.

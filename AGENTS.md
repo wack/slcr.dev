@@ -107,7 +107,13 @@ and across sections they sort by the optional `order` frontmatter number, so a
 section's position is set by its lowest `order`. Current convention: Overview
 1–9, Getting started 10s, Concepts 20s, Guides 30s, Reference 40s. Write doc
 titles in sentence case, matching the section labels. Grouping logic lives in
-`lib/docs.ts`.
+`lib/docs.ts`. Each doc ends with previous and next links in the same order
+(`components/doc-pager.tsx`), so `order` also sets the reading path.
+
+Link related docs inline where a page mentions them (a command to its
+`/docs/reference/cli#slcr-...` entry, a file format to its reference page,
+a term to its concept page), not only in a closing "see also" list. Every
+heading has a GitHub-style anchor, so `#section` links work.
 
 Renaming or moving a file changes its URL. To add a frontmatter field, add it
 to the zod schema in `content-collections.ts`. The field is then typed on
@@ -125,6 +131,29 @@ under `content/pages/`. Each file has its own explicit route:
 
 Header nav links are in `components/site-header.tsx` and footer links (code of
 conduct, security) are in `components/site-footer.tsx`.
+
+# Page metadata and SEO
+
+Every page sets its metadata with `pageMetadata({ title, description, path })`
+from `lib/metadata.ts`. It sets the canonical URL and the Open Graph and
+Twitter fields, including the link-preview image (`public/og-image.png`).
+Don't set `openGraph` or `alternates.canonical` by hand, and never in a
+layout. `app/sitemap.ts` lists the home page, every doc, and every file in
+`content/pages/` automatically. A new hand-written route must be added there
+too. `app/robots.ts` points crawlers at the sitemap.
+
+- **Titles and descriptions.** A doc's `title` is its sidebar label and
+  `<h1>`. When that is too terse to stand alone in search results ("CLI"),
+  add an optional `metaTitle` ("`slcr` CLI reference") for the browser tab,
+  search results, and link previews. Aim for a `description` of about
+  100–160 characters; it is the search snippet as well as the visible lead.
+- **Structured data.** `lib/structured-data.ts` holds the schema.org JSON-LD,
+  rendered with `<JsonLd>` (`components/json-ld.tsx`): site, publisher, and
+  CLI on the home page, and a breadcrumb trail on each doc.
+- **LLM index.** `app/llms.txt/route.ts` and `app/llms-full.txt/route.ts`
+  build `/llms.txt` (a linked index of every doc and site page) and
+  `/llms-full.txt` (every doc's Markdown source) from the content
+  collections. New pages appear in both automatically.
 
 # Design system
 
