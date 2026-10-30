@@ -40,6 +40,9 @@ const docs = defineCollection({
   include: "**/*.mdx",
   schema: z.object({
     title: z.string(),
+    // Replaces `title` in the browser tab, search results, and link previews,
+    // for a page whose short sidebar title says little on its own ("CLI").
+    metaTitle: z.string().optional(),
     description: z.string(),
     // Sort key for the docs sidebar and index. Lower comes first; docs without
     // one sort after those with one, then by path. See lib/docs.ts.

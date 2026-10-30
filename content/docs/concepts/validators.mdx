@@ -46,7 +46,7 @@ check.
 
 ## Validators
 
-A validator is an entry in a validator file, which sits in the directory of
+A validator is an entry in a [validator file](/docs/reference/validator-files), which sits in the directory of
 the code it checks:
 
 ```toml
@@ -95,7 +95,8 @@ exists, then implement until it passes.
 ## Tools and descriptors
 
 SLCR has no built-in tools. Each project declares the programs its
-validators may run in `SLCR.toml`, and a **tool descriptor** describes how to
+validators may run in [`SLCR.toml`](/docs/reference/project-manifest#tools), and a
+**[tool descriptor](/docs/reference/tool-descriptors)** describes how to
 run each one. A descriptor is a small, declarative TOML file. It is never
 executed itself. It specifies:
 
@@ -162,3 +163,6 @@ Each validator produces one of three results:
 Running `slcr check` runs the commands a project's descriptors declare, the
 same way running a test suite runs its tests. It carries the same trust
 considerations as running any project's tests.
+
+When `check` fails, see
+[Troubleshoot `slcr check`](/docs/guides/troubleshoot-slcr-check).

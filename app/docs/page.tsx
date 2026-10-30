@@ -3,11 +3,14 @@ import Link from "next/link";
 import { Eyebrow, reveal, SliceCorner } from "@/components/decor";
 import { CodeSpans } from "@/components/code-spans";
 import { docHref, getDocSections } from "@/lib/docs";
+import { pageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Documentation",
-  description: "Guides and reference for the SLCR standard.",
-};
+  description:
+    "Documentation for SLCR: install the CLI, learn the core concepts, follow step-by-step guides, and look up the specification format and commands.",
+  path: "/docs",
+});
 
 export default function DocsIndexPage() {
   return (

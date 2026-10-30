@@ -47,3 +47,15 @@ export function getDocSections(): DocSection[] {
   }
   return [...sections.values()];
 }
+
+// Every doc in sidebar order.
+export function getOrderedDocs(): Doc[] {
+  return getDocSections().flatMap((section) => section.docs);
+}
+
+// The docs before and after `doc` in sidebar order, across sections.
+export function getAdjacentDocs(doc: Doc) {
+  const docs = getOrderedDocs();
+  const i = docs.indexOf(doc);
+  return { previous: docs[i - 1], next: docs[i + 1] };
+}

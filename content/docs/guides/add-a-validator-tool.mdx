@@ -4,14 +4,15 @@ description: Declare a tool in a project, write validators for it, and keep its 
 order: 32
 ---
 
-Validators run tools that the project declares in `SLCR.toml`. This guide
+[Validators](/docs/concepts/validators) run tools that the project declares in
+[`SLCR.toml`](/docs/reference/project-manifest#tools). This guide
 shows how to declare a tool, use it in a validator, change it, and set it up
 on a new machine. For the descriptor format, see
 [Tool descriptors](/docs/reference/tool-descriptors).
 
 ## Before you start
 
-- You need a project: a directory with `SLCR.toml`. `slcr init` creates one.
+- You need a project: a directory with `SLCR.toml`. [`slcr init`](/docs/reference/cli#slcr-init) creates one.
 - The program the tool runs, such as `cargo-nextest`, must be installed and
   on `PATH` wherever validators run. SLCR doesn't install programs.
 

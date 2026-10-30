@@ -32,12 +32,14 @@ Each validator entry has these fields:
 | Field | Required | Value |
 | --- | --- | --- |
 | `requirement` | Yes | A qualified requirement ID, `<spec-name>/REQ-NNN`, even in a project with one specification. The qualifier is the specification's `spec.name`, not its path. |
-| `tool` | Yes | A key under `[tools]` in `SLCR.toml`. |
-| `criterion` | No | An acceptance criterion ID, `AC-NNN`. It MUST belong to the named requirement. |
+| `tool` | Yes | A key under `[tools]` in [`SLCR.toml`](/docs/reference/project-manifest#tools). |
+| `criterion` | No | An [acceptance criterion](/docs/concepts/validators#acceptance-criteria) ID, `AC-NNN`. It MUST belong to the named requirement. |
 | `description` | No | Text shown in reports. If present, it MUST NOT be empty. |
 | `with` | See below | The tool's settings. |
 
-`with` MUST satisfy the validator schema in the tool's descriptor. It MAY
+`with` MUST satisfy the
+[validator schema](/docs/reference/tool-descriptors#validatorschema) in the
+tool's descriptor. It MAY
 be omitted only when that schema accepts an empty object.
 
 Unknown fields MUST NOT appear.

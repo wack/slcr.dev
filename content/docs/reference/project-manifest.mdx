@@ -20,7 +20,7 @@ are used as defined in [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119).
 | Field | Required | Value |
 | --- | --- | --- |
 | `formatVersion` | Yes | The string `"1"`. |
-| `specs` | Yes | A non-empty array of glob patterns naming the project's specification files, with no duplicates. |
+| `specs` | Yes | A non-empty array of glob patterns naming the project's [specification files](/docs/reference/specification), with no duplicates. |
 | `tools` | No | A table of tool declarations, keyed by tool name. If present, it MUST NOT be empty. |
 
 Unknown fields MUST NOT appear.
@@ -55,15 +55,15 @@ Each entry is a glob relative to the project root:
 | --- | --- |
 | `invalid-pattern` | A pattern isn't a valid glob. |
 | `no-match` | A pattern matches no file. |
-| `matches-validator-file` | A pattern matches a validator file. |
+| `matches-validator-file` | A pattern matches a [validator file](/docs/reference/validator-files). |
 | `unsupported-format` | A match has no specification file extension. |
 | `duplicate-spec-name` | Two matched specifications share a `spec.name`. |
 
 ## `tools`
 
 Each key under `[tools]` is a tool name: lowercase letters and digits in
-dash-separated words, such as `cargo-nextest`. Validators refer to tools by
-this key. The key defaults to the descriptor's own `name`, but the key is
+dash-separated words, such as `cargo-nextest`. [Validators](/docs/reference/validator-files) refer to tools by
+this key. The key defaults to the [descriptor's](/docs/reference/tool-descriptors) own `name`, but the key is
 authoritative and can differ from it.
 
 Each entry has these fields:
@@ -88,8 +88,10 @@ A source is a table with exactly one of these fields:
 A pin is `blake3:` followed by 64 lowercase hexadecimal characters. `slcr`
 MUST NOT run a descriptor whose bytes don't hash to its pin.
 
-Tool entries are written by `slcr tools add`, `slcr tools update`, and
-`slcr tools remove`. A pin SHOULD NOT be written or edited by hand.
+Tool entries are written by [`slcr tools`](/docs/reference/cli#slcr-tools)
+`add`, `update`, and `remove`. A pin SHOULD NOT be written or edited by
+hand. For a walkthrough, see
+[Add a validator tool](/docs/guides/add-a-validator-tool).
 
 `slcr vet` reports each of these as an error:
 
