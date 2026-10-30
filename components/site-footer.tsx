@@ -30,6 +30,23 @@ export function SiteFooter() {
             ))}
             <GitHubLink className="hover:text-white" />
           </nav>
+          <div className="basis-full">
+            <a
+              href="https://launchnest.io/p/slcr-sliceable-linked-checkable-requirements"
+              rel="dofollow"
+              title="slcr.dev — Domain Rating by LaunchNest"
+              className="inline-block"
+            >
+              {/* A plain <img>: the badge is a remote image, and next/image's
+                default loader needs a server, which the static export lacks. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="https://launchnest.io/api/badge/dr?domain=slcr.dev&style=tiny&shape=round&color=white"
+                alt="slcr.dev Domain Rating"
+                width={240}
+              />
+            </a>
+          </div>
         </div>
       </div>
     </footer>
