@@ -33,17 +33,20 @@ export function SiteFooter() {
           <div className="basis-full">
             <a
               href="https://launchnest.io/p/slcr-sliceable-linked-checkable-requirements"
-              rel="dofollow"
-              title="slcr.dev — Domain Rating by LaunchNest"
+              target="_blank"
+              rel="noopener"
               className="inline-block"
             >
               {/* A plain <img>: the badge is a remote image, and next/image's
-                default loader needs a server, which the static export lacks. */}
+                default loader needs a server, which the static export lacks.
+                180px wide is the smallest size at which the badge's small
+                "LISTED ON" caption stays legible. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="https://launchnest.io/api/badge/dr?domain=slcr.dev&style=tiny&shape=round&color=white"
-                alt="slcr.dev Domain Rating"
-                width={240}
+                src="https://launchnest.io/badge/slcr-sliceable-linked-checkable-requirements.svg?variant=listed&theme=light"
+                alt="SLCR (Sliceable, Linked, Checkable Requirements) on LaunchNest"
+                width={180}
+                height={46}
               />
             </a>
           </div>
