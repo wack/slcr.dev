@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { GitHubLink } from "@/components/github-link";
+import { GitHubStarButton } from "@/components/github-link";
 import { Logo } from "@/components/logo";
 import { NavLink } from "@/components/nav-link";
 
@@ -16,7 +16,7 @@ export function SiteHeader() {
         <Link href="/" aria-label="SLCR home">
           <Logo className="size-10" />
         </Link>
-        <nav aria-label="Main" className="flex items-center gap-6 text-sm font-medium">
+        <nav aria-label="Main" className="flex items-center gap-4 text-sm font-medium sm:gap-6">
           {nav.map((item) => (
             <NavLink
               key={item.href}
@@ -27,7 +27,7 @@ export function SiteHeader() {
               {item.label}
             </NavLink>
           ))}
-          <GitHubLink className="text-slate-700 hover:text-cobalt-800" />
+          <GitHubStarButton />
         </nav>
       </div>
     </header>

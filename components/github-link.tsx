@@ -26,3 +26,21 @@ export function GitHubLink({ className = "" }: { className?: string }) {
     </a>
   );
 }
+
+// Compact "Star on GitHub" button for the header, styled like the selected
+// tab in the hero's InstallTabs: a cobalt-950 chip with a small sliced corner
+// that widens on hover. The chip is clipped on an inner span because
+// clip-path would also clip the link's focus outline. Below `sm` the label
+// shortens to "Star" so the nav still fits on a phone.
+export function GitHubStarButton() {
+  return (
+    <a href={githubUrl} aria-label="Star SLCR on GitHub" className="group">
+      <span className="clip-slice-corner flex items-center gap-2 bg-cobalt-950 px-3 py-1 text-white transition-[background-color,--slice-size] duration-300 ease-out [--slice-size:8px] group-hover:bg-cobalt-800 group-hover:[--slice-size:12px]">
+        <GitHubMark className="size-4" />
+        <span>
+          Star<span className="hidden sm:inline"> on GitHub</span>
+        </span>
+      </span>
+    </a>
+  );
+}
